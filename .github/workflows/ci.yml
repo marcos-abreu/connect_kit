@@ -1,0 +1,119 @@
+name: ConnectKit CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  analyze-and-test:
+    name: Analyze and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout your repository
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # Setup Flutter SDK (uses subosito/flutter-action)
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          # Use the cached version of Flutter dependencies for speed
+          cache: true
+
+      # Get package dependencies
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate code (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (Pigeon)
+        run: dart run pigeon --input pigeons/messages.dart
+
+      - name: Check formatting
+        run: dart format --set-exit-if-changed .
+
+      # Run static analysis (lint)
+      - name: Run static analysis
+        run: flutter analyze --fatal-warnings
+
+      # Run unit tests with coverage
+      - name: Run tests
+        run: flutter test --coverage --coverage-config=.coveragerc
+
+      # Upload coverage artifact (change to Codecov later)
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: connect_kit-coverage-report
+          path: coverage/
+
+  build_android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build example app (Android)
+        run: |
+          cd example
+          flutter pub get
+          flutter build apk --debug
+
+  build_ios:
+    name: Build iOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd example/ios
+          pod install --repo-update
+
+      - name: Build example app (iOS)
+        run: |
+          cd example
+          flutter build ios --debug --no-codesign
+
+  publish_check:
+    name: Check publish readiness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check if package is ready to publish
+        run: flutter pub publish --dry-run

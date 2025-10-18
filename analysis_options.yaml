@@ -21,3 +21,6 @@ analyzer:
   exclude:
     # Generated files
     - "**/*.g.dart"
+    - "**/*.pigeon.dart"
+    - "lib/generated/**"
+    - "test/**.mocks.dart"
