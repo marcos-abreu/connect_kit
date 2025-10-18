@@ -1,4 +1,5 @@
 name: connect_kit_example
+version: 0.1.0+1
 description: "Demonstrates how to use the connect_kit plugin."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
