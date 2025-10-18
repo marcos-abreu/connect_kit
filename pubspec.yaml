@@ -1,11 +1,13 @@
 name: connect_kit
-description: "A new Flutter plugin project."
-version: 0.0.1
+description: "Cross-platform health data plugin bridging Apple HealthKit and Android Health Connect with a comprehensive and unified Dart API"
+version: 0.1.0
+repository: https://github.com/marcos-abreu/connect_kit
+issue_tracker: https://github.com/marcos-abreu/connect_kit/issues
 homepage:
 
 environment:
-  sdk: ^3.9.2
-  flutter: '>=3.3.0'
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.7.0'
 
 dependencies:
   flutter:
