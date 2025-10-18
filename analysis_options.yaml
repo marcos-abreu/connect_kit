@@ -1,4 +1,23 @@
 include: package:flutter_lints/flutter.yaml
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+# Add any custom rules or overrides here.
+# For a high-quality plugin, consider uncommenting some stricter rules.
+linter:
+  rules:
+    # --- Style consistency ---
+    - public_member_api_docs
+    - avoid_print # Use logging frameworks instead
+    - prefer_final_fields
+    - annotate_overrides
+    - always_use_package_imports
+
+    # --- Code readability ---
+    - require_trailing_commas
+    - sort_constructors_first
+    - unnecessary_const
+    - prefer_single_quotes
+
+analyzer:
+  exclude:
+    # Generated files
+    - "**/*.g.dart"
