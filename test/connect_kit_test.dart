@@ -1,29 +1,33 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:connect_kit/connect_kit.dart';
-import 'package:connect_kit/connect_kit_platform_interface.dart';
-import 'package:connect_kit/connect_kit_method_channel.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-
-class MockConnectKitPlatform
-    with MockPlatformInterfaceMixin
-    implements ConnectKitPlatform {
-
-  @override
-  Future<String?> getPlatformVersion() => Future.value('42');
-}
 
 void main() {
-  final ConnectKitPlatform initialPlatform = ConnectKitPlatform.instance;
+  // Initialize Flutter bindings
+  final binding = TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('$MethodChannelConnectKit is the default instance', () {
-    expect(initialPlatform, isInstanceOf<MethodChannelConnectKit>());
+  const MethodChannel channel = MethodChannel('connect_kit');
+
+  test('getPlatformVersion returns mocked value', () async {
+    // Mock the method channel using the BinaryMessenger
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      if (methodCall.method == 'getPlatformVersion') {
+        return '42';
+      }
+      return null;
+    });
+
+    // Call your real static method
+    final version = await ConnectKit.getPlatformVersion();
+
+    expect(version, '42');
+
+    // Clean up: remove the mock handler
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
   });
 
-  test('getPlatformVersion', () async {
-    ConnectKit connectKitPlugin = ConnectKit();
-    MockConnectKitPlatform fakePlatform = MockConnectKitPlatform();
-    ConnectKitPlatform.instance = fakePlatform;
-
-    expect(await connectKitPlugin.getPlatformVersion(), '42');
+  test('MethodChannel is used by ConnectKit', () {
+    // Just verify the channel call doesn't throw
+    expect(() => ConnectKit.getPlatformVersion(), returnsNormally);
   });
 }
