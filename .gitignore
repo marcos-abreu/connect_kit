@@ -1,9 +1,21 @@
-# Miscellaneous
+# ConnectKit Plugin .gitignore
+
+# 1. Environment / Secrets
+.env
+.env.*
+
+# 2. Operating System and Local Files
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# 3. Miscellaneous
 *.class
 *.log
 *.pyc
 *.swp
-.DS_Store
+.packages
 .atom/
 .build/
 .buildlog/
@@ -12,22 +24,61 @@
 .swiftpm/
 migrate_working_dir/
 
+# 4. Build Artifacts (Flutter/Dart/Pub related)
+# Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
+/pubspec.lock
+# Keep example’s lockfile
+!example/pubspec.lock
+**/doc/api/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+/build/
+/coverage/
+
+# 5. IDE and Editor Files
 # IntelliJ related
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code related
+.vscode/pids
+.vscode/.history/
+# The .vscode folder contains launch configuration and tasks you configure
+# Comment the line below to ignore ALL of VS Code's local folder:
+# .vscode/
 
-# Flutter/Dart/Pub related
-# Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
-/pubspec.lock
-**/doc/api/
-.dart_tool/
-.flutter-plugins-dependencies
-/build/
-/coverage/
+
+# 6. Flutter Plugin
+
+# Android
+**/android/.gradle/
+**/android/local.properties
+**/android/key.properties
+**/android/app/build/
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/build/
+
+# Xcode user data (can be large and user-specific)
+**/ios/Runner.xcworkspace/xcuserdata/
+**/ios/Runner.xcodeproj/xcuserdata/
+
+# macOS (if generated)
+**/macos/Pods/
+**/macos/Flutter/ephemeral/
+**/macos/build/
+
+# Web (if generated)
+**/web/.dart_tool/
+**/web/build/
+
+# 🚨 Important: Unlike build artifacts, generated Dart source files
+#    (like *.g.dart from build_runner or Pigeon outputs) SHOULD be
+#    committed in Flutter plugins
