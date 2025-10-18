@@ -1,7 +1,0 @@
-[run]
-omit =
-  **/*.g.dart
-  **/*.pigeon.dart
-  **/*.freezed.dart
-  **/generated_plugin_registrant.dart
-  test/**/*.mocks.dart

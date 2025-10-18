@@ -22,7 +22,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable'
+          channel: 'stable'
           # Use the cached version of Flutter dependencies for speed
           cache: true
 
@@ -44,15 +44,51 @@ jobs:
         run: flutter analyze --fatal-warnings
 
       # Run unit tests with coverage
-      - name: Run tests
-        run: flutter test --coverage --coverage-config=.coveragerc
+      - name: Run tests with coverage
+        run: flutter test --coverage
 
-      # Upload coverage artifact (change to Codecov later)
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: connect_kit-coverage-report
-          path: coverage/
+      # Install coverage dependence
+      - name: Install lcov
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      # Process coverage file to exclude generated files
+      - name: Process coverage file to exclude generated files
+        run: |
+          lcov \
+            --remove coverage/lcov.info \
+            'lib/**.g.dart' \
+            'lib/**.pigeon.dart' \
+            'test/**' \
+            --ignore-errors unused,unused \
+            -o coverage/lcov.cleaned.info >/dev/null 2>&1
+
+      - name: Check coverage threshold
+        run: |
+          # Extract coverage percentage
+          COVERAGE_PERCENT=$(lcov --summary coverage/lcov.cleaned.info | grep "lines.......:" | grep -o '[0-9]\+\.[0-9]\+%' | tr -d '%')
+          
+          # Add empty line for better readability
+          echo
+          
+          # Check if coverage meets threshold (90%)
+          THRESHOLD=90
+          if (( $(echo "$COVERAGE_PERCENT >= $THRESHOLD" | bc -l) )); then
+            # Green checkmark and text
+            echo -e "\033[32m✅ Coverage is ${COVERAGE_PERCENT}% (meets ${THRESHOLD}% threshold)\033[0m"
+          else
+            # Red X and text
+            echo -e "\033[31m❌ Coverage is ${COVERAGE_PERCENT}% (below ${THRESHOLD}% threshold)\033[0m"
+            echo "::error::Coverage is below ${THRESHOLD}%. Please add more tests to improve coverage."
+            exit 1
+          fi
+
+      # TODO: I will enable later once my ci is passing
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     file: ./coverage/lcov.cleaned.info
+      #     flags: unit-tests
+      #     name: connect_kit
 
   build_android:
     name: Build Android

@@ -8,7 +8,8 @@ import 'package:flutter/services.dart';
 ///
 /// All methods are static — no instantiation required.
 class ConnectKit {
-  ConnectKit._(); // Private constructor
+  // Private constructor
+  ConnectKit._(); // coverage:ignore-line
 
   /// Returns the platform version (for example app only).
   static Future<String?> getPlatformVersion() async {
