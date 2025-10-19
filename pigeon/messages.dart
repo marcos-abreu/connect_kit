@@ -7,6 +7,7 @@ import 'package:pigeon/pigeon.dart';
 // flutter pub run pigeon --input pigeon/messages.dart
 @ConfigurePigeon(
   PigeonOptions(
+    dartPackageName: 'connect_kit',
     dartOut: 'lib/src/pigeon/connect_kit_messages.g.dart',
     dartOptions: DartOptions(),
     dartTestOut: 'test/pigeon/connect_kit_test_api.g.dart',
@@ -30,7 +31,7 @@ import 'package:pigeon/pigeon.dart';
     //   prefix: 'ConnectKit', // Use a clear prefix to avoid naming collisions
     // ),
 
-    copyrightHeader: 'Copyright(c) 2025-present ConnectKit. All rights reserved.',
+    // copyrightHeader: 'Copyright(c) 2025-present ConnectKit. All rights reserved.',
   ),
 )
 

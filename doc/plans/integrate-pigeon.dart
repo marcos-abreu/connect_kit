@@ -26,6 +26,8 @@ abstract class ConnectKitHostApi {
 - *Dart output*: `lib/pigeon/connect_kit_messages.g.dart`
 -  *Kotlin Output*: `android/src/main/kotlin/dev/luix/connect_kit/pigeon/ConnectKitMessages.g.kt`
 - *Swift Output*: `ios/Classes/Pigeon/ConnectKitMessages.g.swift`
+
+
 ### Phase 2: Generation Script & CI
 
 - Create a new shell script (e.g., `script/generate_code.sh`), with the right command to generate pigeon content (dart, ios, and android)
