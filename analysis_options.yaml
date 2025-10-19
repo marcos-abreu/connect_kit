@@ -13,7 +13,6 @@ linter:
 
     # --- Code readability ---
     - require_trailing_commas
-    - sort_constructors_first
     - unnecessary_const
     - prefer_single_quotes
 
