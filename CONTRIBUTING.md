@@ -40,3 +40,12 @@ This project uses the official Dart style guide. Run `dart format .` to format y
 1. Update the CHANGELOG.md with your changes
 2. Ensure your PR description clearly describes the problem and solution
 3. Link any relevant issues in your PR description
+
+## Code Generation
+
+ConnectKit uses [Pigeon](https://pub.dev/packages/pigeon) for type-safe platform channels.
+
+### Generate Code
+Run this script to regenerate all platform-specific code:
+```bash
+./script/generate_code.sh

@@ -42,11 +42,11 @@ This will be the Dart structure:
 lib/
 ├── connect_kit.dart          # Main entry point, exports everything
 ├── src/
-│   ├── client_api.dart       # Implements the Pigeon API
 │   ├── models/               # Data models
 │   ├── pigeon/               # Folder containing auto generated pigeon files
 │   │   └── connect_kit_messages.g.dart
 │   ├── services/             # Business logic
+│   │   └── operations_service.dart
 │   └── utils/                # Utilities
 ```
 
@@ -80,6 +80,7 @@ ps: The decision for how to expose the plugin: it will be a singleton
 
 
 ps: the applications that use this plugin should use the methods through ConnetKit, not though the ClientApi... so I don't know how this will work, but the app should use the siglenton (form ConnectKit) to get the instance and use it to access the methods
+
 ### Phase 4: Unit Tests
 
 * Create mock implementation of the Pigeon-generated classes for testing. This will allow me to test your Dart code without needing to run on actual devices. Maybe there is a solution already in some lib, but lets explore what is available and useful. (maybe with dart **mockito**, if needed)

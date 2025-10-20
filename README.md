@@ -51,7 +51,7 @@ flutter pub get
 > **iOS** requires HealthKit entitlements and Info.plist permissions.
 > **Android** requires Health Connect configuration in your AndroidManifest.xml.
 >
-> See our [Platform Setup Guide](#) for full details.
+> See our [Platform Setup Guide](docs/Platform_Setup.md) for full details.
 
 ---
 
@@ -63,11 +63,14 @@ Here’s a simple example to get started:
 import 'package:connect_kit/connect_kit.dart';
 
 void main() async {
+  // Get the singleton instance
+  final connectKit = ConnectKit.instance;
+
   // Request read permissions for step count
-  await ConnectKit.requestPermissions(readTypes: [CKTypes.steps]);
+  await connectKit.requestPermissions(readTypes: [CKTypes.steps]);
 
   // Retrieve step data
-  final steps = await ConnectKit.read(
+  final steps = await connectKit.read(
     types: [CKTypes.steps],
     from: DateTime.now().subtract(Duration(days: 1)),
     to: DateTime.now(),
@@ -85,7 +88,7 @@ That’s all you need to start reading health data from both, iOS and Android, p
 ## 6. Documentation & Support
 
 📘 **API Reference:** [View on pub.dev](https://pub.dev/packages/connect_kit)
-🧭 **Full Documentation:** [Platform setup, advanced usage, and architecture overview →](#)
+🧭 **Full Documentation:** [Platform setup, advanced usage, and architecture overview →](docs/Architecture.md)
 🐛 **Issue Tracker:** [GitHub Issues](https://github.com/marcos-abreu/connect_kit/issues)
 
 Need help or found a bug? Open an [issue](https://github.com/marcos-abreu/connect_kit/issues) — your feedback drives improvements.
@@ -97,7 +100,7 @@ Need help or found a bug? Open an [issue](https://github.com/marcos-abreu/connec
 > Whether you're fixing a bug, improving documentation, or proposing a new feature — we welcome your help!
 
 **➡️ Get Started:**
-See the [Contributor Documentation Guide](#) for details on:
+See the [Contributor Documentation Guide](CONTRIBUTING.md) for details on:
 
 * Setting up your local environment
 * Understanding the plugin’s architecture
