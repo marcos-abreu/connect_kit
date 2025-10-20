@@ -1,5 +1,7 @@
 library;
 
+import 'package:flutter/foundation.dart'; // Required for @visibleForTesting
+
 // The auto-generated Pigeon code lives here.
 import 'package:connect_kit/src/pigeon/connect_kit_messages.g.dart';
 import 'package:connect_kit/src/services/operations_service.dart';
@@ -14,12 +16,26 @@ import 'package:connect_kit/src/services/operations_service.dart';
 class ConnectKit {
   // --- Singleton Implementation ---
 
+  /// **FOR TESTING ONLY.**
+  /// Returns a new instance of [ConnectKit] with injected dependencies.
+  /// Used to mock services and test the public API façade in isolation.
+  @visibleForTesting
+  ConnectKit.forTesting({
+    ConnectKitHostApi? hostApi,
+    OperationsService? operationsService,
+  }) {
+    _initialize(
+      injectedHostApi: hostApi,
+      injectedOperationsService: operationsService,
+    ); // Initialize immediately on construction
+  }
+
   /// Private constructor to enforce the singleton pattern
   ConnectKit._internal() {
     _initialize(); // Initialize immediately on construction
   }
 
-  // A static final variable is initialized the first time it is accessed.
+  // A static final variable is initialized the first time it is accessed
   // Initialization is atomic and happens at most once
   static final ConnectKit _instance = ConnectKit._internal(); // ← final, non-nullable
 
@@ -30,13 +46,18 @@ class ConnectKit {
   static ConnectKit get instance => _instance;
 
   /// Initialization (idempotent)
+  /// It allows optional dependency injection for testing purposes
   bool _initialized = false;
-  void _initialize() {
+  void _initialize({
+    ConnectKitHostApi? injectedHostApi,
+    OperationsService? injectedOperationsService,
+  }) {
     if (_initialized) return;
     _initialized = true;
 
-    _hostApi = ConnectKitHostApi();
-    _operationsService = OperationsService(_hostApi);
+    _hostApi = injectedHostApi ?? ConnectKitHostApi();
+    _operationsService =
+        injectedOperationsService ?? OperationsService(_hostApi);
   }
 
   // --- Public API ---

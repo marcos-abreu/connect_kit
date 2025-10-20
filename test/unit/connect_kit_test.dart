@@ -1,33 +1,62 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+// Class under test
 import 'package:connect_kit/connect_kit.dart';
 
+// Class to mock
+import 'package:connect_kit/src/services/operations_service.dart';
+class MockOperationsService extends Mock implements OperationsService {}
+
 void main() {
-  // Initialize Flutter bindings
-  final binding = TestWidgetsFlutterBinding.ensureInitialized();
+  late ConnectKit testConnectKit;
+  late MockOperationsService mockOperationsService;
 
-  const MethodChannel channel = MethodChannel('connect_kit');
+  setUp(() {
+    mockOperationsService = MockOperationsService();
 
-  test('getPlatformVersion returns mocked value', () async {
-    // Mock the method channel using the BinaryMessenger
-    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-      if (methodCall.method == 'getPlatformVersion') {
-        return '42';
-      }
-      return null;
-    });
-
-    // Call your real static method
-    final version = await ConnectKit.getPlatformVersion();
-
-    expect(version, '42');
-
-    // Clean up: remove the mock handler
-    binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    // We use the forTesting constructor to inject the mock service.
+    testConnectKit = ConnectKit.forTesting(
+      operationsService: mockOperationsService,
+    );
   });
 
-  test('MethodChannel is used by ConnectKit', () {
-    // Just verify the channel call doesn't throw
-    expect(() => ConnectKit.getPlatformVersion(), returnsNormally);
+  tearDown(() {
+    reset(mockOperationsService);
+  });
+
+  group('ConnectKit Facade', () {
+    test('instance returns the same instance (Singleton check)', () {
+      final instance1 = ConnectKit.instance;
+      final instance2 = ConnectKit.instance;
+      expect(instance1, same(instance2));
+    });
+
+    test('getPlatformVersion delegates call to OperationsService and returns result', () async {
+      // Arrange
+      const expectedVersion = 'Test-OS 1.0';
+      when(() => mockOperationsService.getPlatformVersion())
+          .thenAnswer((_) async => expectedVersion);
+
+      // Act
+      final actualVersion = await testConnectKit.getPlatformVersion();
+
+      // Assert
+      verify(() => mockOperationsService.getPlatformVersion()).called(1);
+      expect(actualVersion, expectedVersion);
+    });
+
+    test('getPlatformVersion re-throws exceptions from OperationsService', () async {
+      // Arrange
+      final expectedError = Exception('Service layer failure');
+      when(() => mockOperationsService.getPlatformVersion()).thenThrow(expectedError);
+
+      // Act & Assert
+      expect(
+        () => testConnectKit.getPlatformVersion(),
+        throwsA(isA<Exception>()),
+      );
+      verify(() => mockOperationsService.getPlatformVersion()).called(1);
+    });
   });
 }
