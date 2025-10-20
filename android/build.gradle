@@ -1,4 +1,4 @@
-group = "dev.luix.connect_kit.connect_kit"
+group = "dev.luix.connect_kit"
 version = "1.0-SNAPSHOT"
 
 buildscript {
@@ -25,7 +25,7 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 android {
-    namespace = "dev.luix.connect_kit.connect_kit"
+    namespace = "dev.luix.connect_kit"
 
     compileSdk = 36
 

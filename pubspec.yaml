@@ -39,7 +39,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: dev.luix.connect_kit.connect_kit
+        package: dev.luix.connect_kit
         pluginClass: ConnectKitPlugin
       ios:
         pluginClass: ConnectKitPlugin

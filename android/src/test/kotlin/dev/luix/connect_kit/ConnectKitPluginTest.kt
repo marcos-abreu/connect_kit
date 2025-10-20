@@ -1,4 +1,4 @@
-package dev.luix.connect_kit.connect_kit
+package dev.luix.connect_kit
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
