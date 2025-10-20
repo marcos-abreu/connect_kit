@@ -32,6 +32,10 @@ void main() {
       expect(instance1, same(instance2));
     });
 
+    test('default instance initializes correctly', () {
+      expect(ConnectKit.instance.getPlatformVersion, isNotNull);
+    });
+
     test('getPlatformVersion delegates call to OperationsService and returns result', () async {
       // Arrange
       const expectedVersion = 'Test-OS 1.0';
