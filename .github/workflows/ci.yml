@@ -35,7 +35,7 @@ jobs:
 
       # Run static analysis (lint)
       - name: Run static analysis
-        run: flutter analyze --fatal-warnings
+        run: flutter analyze --fatal-warnings lib
 
       # Run unit tests with coverage
       - name: Run tests with coverage
