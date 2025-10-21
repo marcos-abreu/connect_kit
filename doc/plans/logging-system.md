@@ -71,3 +71,35 @@ Create a unified, minimal-overhead logging system for ConnectKit that:
   1. Document the new CKLogger in the README and in the API reference.
   2. Clear guidelines on what can/cannot be logged (not health data, sensitive data, etc.).
   3. Add unit tests to ensure the CKLogger works as expected.
+
+## Kotlin Build Notes
+
+Rationale for Omitting LogExecutor in Kotlin CKLogger
+
+The Dart/Flutter implementation of the CKLogger required a LogExecutor interface to abstract the actual logging mechanism (developer.log). This was necessary primarily for two reasons:
+
+Testability: To allow mocking the logging function during unit tests to verify that Log.d, Log.e, etc., were called with the correct parameters.
+
+Pollution Control: To prevent excessive console output (log pollution) during test execution, as Dart's unit test environment does not automatically strip log calls.
+
+In the Kotlin/Android environment, this abstraction is considered redundant due to native testing solutions:
+
+1. Testability (Verifying Calls)
+
+Because the underlying logging utility, android.util.Log, is a static class from the Android framework, it cannot be mocked with standard JVM unit testing tools (like Mockito).
+
+Instead, we rely on the Robolectric testing framework. Robolectric provides a "shadow" implementation of the core Android classes, specifically ShadowLog.
+
+ShadowLog automatically intercepts all static calls to android.util.Log.
+
+During testing, we can use ShadowLog.getLogs() to retrieve a list of every log entry made by the code under test.
+
+This mechanism allows us to precisely verify the tag, level (D, E, W), and message content of every logging call without introducing a dependency injection facade (LogExecutor) into the production code.
+
+2. Pollution Control (Preventing Output)
+
+Log pollution is naturally handled by the Android build system and the testing environment:
+
+Release Builds: Logging calls are typically wrapped in an if (BuildConfig.DEBUG) block. When building for release or running release-side tests, the compiler performs dead code elimination  and strips these log calls entirely, guaranteeing zero pollution.
+
+Robolectric: When running unit tests via Robolectric, even in debug mode, the calls are diverted to the in-memory ShadowLog list, not the console or the device's logcat, thus preventing noisy output.

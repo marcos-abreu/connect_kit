@@ -49,3 +49,23 @@ ConnectKit uses [Pigeon](https://pub.dev/packages/pigeon) for type-safe platform
 Run this script to regenerate all platform-specific code:
 ```bash
 ./script/generate_code.sh
+```
+
+## Logging Guidelines
+
+The plugin uses `CKLogger` for structured, debug-only logging. Follow these rules:
+
+### ✅ DO
+- Use `CKLogger.d/i/w/e/f(tag, message)` for debug diagnostics
+- Include meaningful tags (e.g., `Permissions`, `HealthData`)
+- Log operation durations and non-sensitive parameters
+
+### ❌ DO NOT
+- Log health data, user identifiers, or PII
+- Log in release builds (all logs are auto-stripped)
+- Use `print()` or `debugPrint()` – always use `CKLogger`
+
+### Example
+```dart
+CKLogger.i('Permissions', 'Requested HealthKit access for steps');
+```

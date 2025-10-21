@@ -29,6 +29,7 @@ It simplifies complex native integrations behind a clean, type-safe Dart API —
 📊 **Consistent data model** – Read steps, workouts, heart rate, and more via a unified data model.
 🔄 **Read & Write Support** – Read and write data from both platforms.
 🧠 **Comprehensive Data Types** – Supporting steps, heart rate, sleep, workouts, and more.
+✅ **Zero-Overhead Debug Logging** – Structured, platform-native logs that are fully stripped in release builds
 🚀 **Modern Architecture** – Layered design emphasizing maintainability and contribution clarity.
 🧪 **High Test Coverage** – Robust unit tests and CI verification to maintain stability.
 📱 **Example app** — see it ConnectKit works in minutes
