@@ -58,19 +58,28 @@ jobs:
 
       - name: Check coverage threshold
         run: |
-          # Extract coverage percentage
-          COVERAGE_PERCENT=$(lcov --summary coverage/lcov.cleaned.info | grep "lines.......:" | grep -o '[0-9]\+\.[0-9]\+%' | tr -d '%')
+          # Extract coverage percentage safely
+          COVERAGE_PERCENT=$(lcov --summary coverage/lcov.cleaned.info \
+            | grep -E "lines.*:" \
+            | grep -Eo '[0-9]+\.[0-9]+%' \
+            | tr -d '%')
 
-          # Add empty line for better readability
+          # Ensure a value was extracted
+          if [ -z "$COVERAGE_PERCENT" ]; then
+            echo "::error::Failed to extract coverage percentage from lcov output."
+            exit 1
+          fi
+
           echo
+          echo "Detected coverage: ${COVERAGE_PERCENT}%"
 
-          # Check if coverage meets threshold (90%)
-          THRESHOLD=90
-          if (( $(echo "$COVERAGE_PERCENT >= $THRESHOLD" | bc -l) )); then
-            # Green checkmark and text
+          # Threshold check
+          THRESHOLD=90.0
+          RESULT=$(echo "$COVERAGE_PERCENT >= $THRESHOLD" | bc -l)
+
+          if [ "$RESULT" -eq 1 ]; then
             echo -e "\033[32m✅ Coverage is ${COVERAGE_PERCENT}% (meets ${THRESHOLD}% threshold)\033[0m"
           else
-            # Red X and text
             echo -e "\033[31m❌ Coverage is ${COVERAGE_PERCENT}% (below ${THRESHOLD}% threshold)\033[0m"
             echo "::error::Coverage is below ${THRESHOLD}%. Please add more tests to improve coverage."
             exit 1
