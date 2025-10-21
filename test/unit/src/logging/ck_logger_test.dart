@@ -54,11 +54,11 @@ void main() {
     // CRITICAL FIX: Set logging state to 'null' (defer to kDebugMode).
     // In the flutter test runner, kDebugMode is always TRUE, so this effectively
     // sets the logger to ENABLED by default for most tests.
-    CKLogger.setLoggingEnabled(null);
-    CKLogger.setCriticalLogBypass(false);
+    CKLogger.loggingEnabled = null;
+    CKLogger.criticalLogBypass = false;
 
     // 3. Set the logger to use our content-checking mock for positive tests.
-    CKLogger.testLogExecutor = mockCapture.mockLogExecutor;
+    CKLogger.logExecutor = mockCapture.mockLogExecutor;
   });
 
   // --- Test Suites ---
@@ -131,7 +131,7 @@ void main() {
     test(
         'Logging is ENABLED when setLoggingEnabled is null (Defers to kDebugMode=true)',
         () {
-      // Arrange (Default state from setUp: setLoggingEnabled(null))
+      // Arrange (Default state from setUp: loggingEnabled = null)
 
       // Act (Since kDebugMode is true in test runner, this should execute)
       CKLogger.d(defaultTag, defaultMessage);
@@ -146,7 +146,7 @@ void main() {
         'Logging is DISABLED when setLoggingEnabled is false (Absolute Override)',
         () {
       // Arrange
-      CKLogger.setLoggingEnabled(false);
+      CKLogger.loggingEnabled = false;
 
       // Act (Should be suppressed despite kDebugMode=true)
       CKLogger.d(defaultTag, defaultMessage);
@@ -161,7 +161,7 @@ void main() {
         'Logging is ENABLED when setLoggingEnabled is true (Absolute Override)',
         () {
       // Arrange
-      CKLogger.setLoggingEnabled(true);
+      CKLogger.loggingEnabled = true;
 
       // Act (Should log, which is the same as default behavior, but explicitly tested)
       CKLogger.d(defaultTag, defaultMessage);
@@ -193,8 +193,8 @@ void main() {
         () {
       // Arrange: Simulate a release build where standard logs are suppressed,
       // but the critical override is active.
-      CKLogger.setLoggingEnabled(false); // Simulates standard logs suppressed
-      CKLogger.setCriticalLogBypass(true); // R5 override active
+      CKLogger.loggingEnabled = false; // Simulates standard logs suppressd
+      CKLogger.criticalLogBypass = true; // R5 override active
 
       // Act
       CKLogger.critical(criticalTag, defaultMessage);
@@ -210,9 +210,9 @@ void main() {
         'Critical log is suppressed when bypass is false AND logging is disabled',
         () {
       // Arrange: Force disable both standard logging and the critical bypass.
-      CKLogger.setLoggingEnabled(false);
-      CKLogger.setCriticalLogBypass(
-          false); // Already false by default, but set for clarity
+      CKLogger.loggingEnabled = false;
+      CKLogger.criticalLogBypass =
+          false; // false by default, but set for clarity
 
       // Act
       CKLogger.critical(criticalTag, defaultMessage);
@@ -226,8 +226,8 @@ void main() {
         'Standard log is suppressed when standard logging is disabled, even if Critical Bypass is true',
         () {
       // Arrange: Critical bypass is true, but standard logging is false.
-      CKLogger.setLoggingEnabled(false);
-      CKLogger.setCriticalLogBypass(true);
+      CKLogger.loggingEnabled = false;
+      CKLogger.criticalLogBypass = true;
 
       // Act
       CKLogger.d(defaultTag, defaultMessage); // Standard log
