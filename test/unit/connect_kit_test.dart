@@ -6,6 +6,7 @@ import 'package:connect_kit/connect_kit.dart';
 
 // Class to mock
 import 'package:connect_kit/src/services/operations_service.dart';
+
 class MockOperationsService extends Mock implements OperationsService {}
 
 void main() {
@@ -36,7 +37,9 @@ void main() {
       expect(ConnectKit.instance.getPlatformVersion, isNotNull);
     });
 
-    test('getPlatformVersion delegates call to OperationsService and returns result', () async {
+    test(
+        'getPlatformVersion delegates call to OperationsService and returns result',
+        () async {
       // Arrange
       const expectedVersion = 'Test-OS 1.0';
       when(() => mockOperationsService.getPlatformVersion())
@@ -50,10 +53,12 @@ void main() {
       expect(actualVersion, expectedVersion);
     });
 
-    test('getPlatformVersion re-throws exceptions from OperationsService', () async {
+    test('getPlatformVersion re-throws exceptions from OperationsService',
+        () async {
       // Arrange
       final expectedError = Exception('Service layer failure');
-      when(() => mockOperationsService.getPlatformVersion()).thenThrow(expectedError);
+      when(() => mockOperationsService.getPlatformVersion())
+          .thenThrow(expectedError);
 
       // Act & Assert
       expect(

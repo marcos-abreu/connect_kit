@@ -37,7 +37,8 @@ class ConnectKit {
 
   // A static final variable is initialized the first time it is accessed
   // Initialization is atomic and happens at most once
-  static final ConnectKit _instance = ConnectKit._internal(); // ← final, non-nullable
+  static final ConnectKit _instance =
+      ConnectKit._internal(); // ← final, non-nullable
 
   late final ConnectKitHostApi _hostApi;
   late final OperationsService _operationsService;
