@@ -51,7 +51,7 @@ flutter pub get
 > **iOS** requires HealthKit entitlements and Info.plist permissions.
 > **Android** requires Health Connect configuration in your AndroidManifest.xml.
 >
-> See our [Platform Setup Guide](docs/Platform_Setup.md) for full details.
+> See our [Platform Setup Guide](doc/Platform_Setup.md) for full details.
 
 ---
 
@@ -88,7 +88,7 @@ That’s all you need to start reading health data from both, iOS and Android, p
 ## 6. Documentation & Support
 
 📘 **API Reference:** [View on pub.dev](https://pub.dev/packages/connect_kit)
-🧭 **Full Documentation:** [Platform setup, advanced usage, and architecture overview →](docs/Architecture.md)
+🧭 **Full Documentation:** [Platform setup, advanced usage, and architecture overview →](doc/Architecture.md)
 🐛 **Issue Tracker:** [GitHub Issues](https://github.com/marcos-abreu/connect_kit/issues)
 
 Need help or found a bug? Open an [issue](https://github.com/marcos-abreu/connect_kit/issues) — your feedback drives improvements.
