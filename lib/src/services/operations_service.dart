@@ -1,8 +1,7 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:connect_kit/src/pigeon/connect_kit_messages.g.dart';
+import 'package:connect_kit/src/utils/operation_guard.dart';
 
-/// Class reponsible for handling operationa tasks
+/// Class reponsible for handling operational tasks
 class OperationsService {
   final ConnectKitHostApi _hostApi;
 
@@ -13,22 +12,13 @@ class OperationsService {
   ///
   /// Implements basic error handling for platform communication failures (Phase 9).
   Future<String> getPlatformVersion() async {
-    try {
-      // Call the generated Pigeon method.
-      final String version = await _hostApi.getPlatformVersion();
-      return version;
-    } on PlatformException catch (e) {
-      // Platform Communication Errors (Phase 9)
-      if (kDebugMode) {
-        debugPrint('PlatformException caught: ${e.message}');
-      }
-      rethrow;
-    } catch (e) {
-      // Initialization or other errors (Phase 9)
-      if (kDebugMode) {
-        debugPrint('General error caught: $e');
-      }
-      rethrow;
-    }
+    final result = await OperationGuard.executeAsync(
+      () async {
+        return await _hostApi.getPlatformVersion();
+      },
+      operationName: 'Check SDK availability',
+    );
+
+    return result.dataOrThrow;
   }
 }
