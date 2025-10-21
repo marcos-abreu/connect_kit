@@ -2,9 +2,9 @@ name: ConnectKit CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -22,15 +22,16 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           # Use the cached version of Flutter dependencies for speed
           cache: true
 
       - name: Get dependencies & Generate code (build_runner, Pigeon, ...)
-        run: ./script/generate_code.sh  # ← ADD THIS
+        run: ./script/generate_code.sh # ← ADD THIS
 
       - name: Check formatting
-        run: dart format --set-exit-if-changed .
+        run: |
+          dart format --set-exit-if-changed $(find lib test pigeon -type f -name "*.dart" ! -name "*.g.dart")
 
       # Run static analysis (lint)
       - name: Run static analysis
@@ -92,7 +93,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Install dependencies
@@ -113,7 +114,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Install dependencies
@@ -138,7 +139,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: "stable"
           cache: true
 
       - name: Install dependencies
