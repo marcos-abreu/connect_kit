@@ -1,5 +1,9 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:flutter_test/flutter_test.dart';
+import '../../../helpers/mock_log_capture.dart';
+
+import 'package:connect_kit/src/logging/ck_logger.dart';
 import 'package:connect_kit/src/utils/result.dart';
 import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 
@@ -10,6 +14,22 @@ Matcher isAConnectKitExceptionWithCode<T extends ConnectKitException>(
 }
 
 void main() {
+  final mockCapture = MockLogCapture();
+
+  // --- Setup and Teardown ---
+  setUp(() {
+    // Mock the log system to avoid polluting the console during tests
+    mockCapture.reset();
+    CKLogger.logExecutor = mockCapture.mockLogExecutor;
+    // CKLogger.loggingEnabled = false;
+  });
+
+  tearDown(() {
+    // Reset the log system to the default behavior
+    CKLogger.logExecutor = developer.log;
+    // CKLogger.loggingEnabled = null;
+  });
+
   group('Result.failureFromException Factory', () {
     // Using Exception class to satisfy the factory's likely signature
     final originalError = Exception('Original data conversion problem');
@@ -198,11 +218,41 @@ void main() {
       expect(successCalled, isTrue);
     });
 
+    test('onSuccess logs error when action throws', () {
+      successResult.onSuccess((data) {
+        throw Exception('Action failed onSuccess');
+      });
+
+      expect(mockCapture.callCount, 1);
+      expect(
+          mockCapture.lastOutput,
+          startsWith(
+              '[ConnectKit][Result][ERROR] Failed to execute action, onSuccess'));
+      expect(mockCapture.lastLevel, 1000);
+      expect(mockCapture.lastError.toString(),
+          contains('Action failed onSuccess'));
+    });
+
     test('onFailure executes callback only on failure', () {
       bool failureCalled = false;
       failureResult.onFailure((error) => failureCalled = true);
       successResult.onFailure((error) => fail('Should not be called'));
       expect(failureCalled, isTrue);
+    });
+
+    test('onFailure logs error when action throws', () {
+      failureResult.onFailure((err) {
+        throw Exception('Action failed onFailure');
+      });
+
+      expect(mockCapture.callCount, 1);
+      expect(
+          mockCapture.lastOutput,
+          startsWith(
+              '[ConnectKit][Result][ERROR] Failed to execute action, onFailure'));
+      expect(mockCapture.lastLevel, 1000);
+      expect(mockCapture.lastError.toString(),
+          contains('Action failed onFailure'));
     });
 
     test('equality and hashCode', () {

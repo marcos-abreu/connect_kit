@@ -1,6 +1,11 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
+
+import '../../../helpers/mock_log_capture.dart';
+import 'package:connect_kit/src/logging/ck_logger.dart';
+
 import 'package:connect_kit/src/utils/result.dart';
 import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 import 'package:connect_kit/src/utils/operation_guard.dart';
@@ -12,6 +17,22 @@ Matcher isAConnectKitExceptionWithCode<T extends ConnectKitException>(
 }
 
 void main() {
+  final mockCapture = MockLogCapture();
+
+  // --- Setup and Teardown ---
+  setUp(() {
+    // Mock the log system to avoid polluting the console during tests
+    mockCapture.reset();
+    CKLogger.logExecutor = mockCapture.mockLogExecutor;
+    CKLogger.loggingEnabled = false;
+  });
+
+  tearDown(() {
+    // Reset the log system to the default behavior
+    CKLogger.logExecutor = developer.log;
+    CKLogger.loggingEnabled = null;
+  });
+
   group('OperationGuard.execute (Synchronous)', () {
     test('Success path should return Result.success', () {
       final result = OperationGuard.execute(() => 42);

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:connect_kit/src/logging/ck_logger.dart';
 import 'package:connect_kit/src/utils/result.dart';
 import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 
@@ -10,6 +11,9 @@ import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 /// always return a [Result] object, converting any thrown exceptions
 /// into a [ConnectKitException] within the failure Result
 class OperationGuard {
+  /// Use static const and SCREAMING_SNAKE_CASE
+  static const String logTag = 'Result';
+
   /// Execute a synchronous operation, wrapping the outcome in a [Result]
   static Result<T> execute<T>(
     T Function() operation, {
@@ -22,13 +26,25 @@ class OperationGuard {
       result = operation();
 
       stopwatch.stop();
-      // TODO: future log
+
+      CKLogger.i(
+        logTag,
+        'Executed $operationName with parameters: $parameters '
+        'in ${stopwatch.elapsed.inMilliseconds}ms, with result: $result',
+      );
 
       return Result.success(result as T);
     } catch (error, stackTrace) {
       stopwatch.stop();
 
-      // TODO: future log
+      CKLogger.e(
+        logTag,
+        'Failed when executing $operationName with parameters: $parameters '
+        'in ${stopwatch.elapsed.inMilliseconds}ms, with error: $error',
+        error,
+        stackTrace,
+      );
+
       final exception = error is PlatformException
           ? OperationGuard._mapPlatformException(error, stackTrace)
           : ConnectKitException(
@@ -59,7 +75,11 @@ class OperationGuard {
           : await operation().timeout(timeout);
       stopwatch.stop();
 
-      // TODO: future log
+      CKLogger.i(
+        logTag,
+        'Executed $operationName with parameters: $parameters '
+        'in ${stopwatch.elapsed.inMilliseconds}ms, with result: $result',
+      );
 
       return Result.success(result);
     } on MissingPluginException catch (e, stackTrace) {
@@ -94,7 +114,13 @@ class OperationGuard {
     } catch (error, stackTrace) {
       stopwatch.stop();
 
-      // TODO: future log
+      CKLogger.e(
+        logTag,
+        'Failed when executing $operationName with parameters: $parameters '
+        'in ${stopwatch.elapsed.inMilliseconds}ms, with error: $error',
+        error,
+        stackTrace,
+      );
 
       return Result.failure(
         ConnectKitException(

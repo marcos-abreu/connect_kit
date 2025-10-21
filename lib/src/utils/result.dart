@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:connect_kit/src/logging/ck_logger.dart';
 import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 
 /// Represents the outcome of an operation, either a success or a failure.
@@ -12,6 +13,9 @@ import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 /// else print(result.error);
 /// ```
 class Result<T> {
+  /// Use static const and SCREAMING_SNAKE_CASE
+  static const String logTag = 'Result';
+
   /// The successful data payload. Only non-null if [isSuccess] is true
   final T? data;
 
@@ -34,7 +38,8 @@ class Result<T> {
 
   /// Create a failure result
   factory Result.failure(ConnectKitException error) {
-    // TODO: future log
+    CKLogger.e(logTag, 'Creating failure result with error: $error');
+
     return Result._(error: error, isSuccess: false);
   }
 
@@ -55,7 +60,11 @@ class Result<T> {
       originalError: exception,
     );
 
-    // TODO: future log
+    CKLogger.e(
+      logTag,
+      '$finalCode - Triggering failure for exception: $exception',
+    );
+
     return Result.failure(connectKitException);
   }
 
@@ -119,8 +128,13 @@ class Result<T> {
     if (isSuccess && data != null) {
       try {
         action(data as T);
-      } catch (e) {
-        // TODO: future log
+      } catch (error, stackTrace) {
+        CKLogger.e(
+          logTag,
+          'Failed to execute action, onSuccess, with exception: $error',
+          error,
+          stackTrace,
+        );
       }
     }
     return this;
@@ -131,8 +145,13 @@ class Result<T> {
     if (isFailure && error != null) {
       try {
         action(error!);
-      } catch (e) {
-        // TODO: future log
+      } catch (error, stackTrace) {
+        CKLogger.e(
+          logTag,
+          'Failed to execute action, onFailure, with exception: $error',
+          error,
+          stackTrace,
+        );
       }
     }
     return this;

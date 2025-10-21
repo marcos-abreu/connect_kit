@@ -5,6 +5,9 @@ import UIKit
 /// This class handles the Flutter engine lifecycle and acts as the Composition Root
 public class ConnectKitPlugin: NSObject, FlutterPlugin {
 
+    // Tag for logging purposes
+    private static let TAG = "ConnectKitPlugin"
+
     // The Pigeon facade implementation
     private var hostApi: CKHostApi
 
@@ -30,6 +33,8 @@ public class ConnectKitPlugin: NSObject, FlutterPlugin {
         ConnectKitHostApiSetup.setUp(binaryMessenger: messenger, api: instance.hostApi)
         // Set up Flutter API callbacks
         // ConnectKitFlutterApiSetup.setUp(binaryMessenger: messenger, api: permissionService)
+
+        CKLogger.i(tag: TAG, message: "Plugin registered")
     }
 
     // MARK: - FlutterPlugin Protocol
@@ -38,6 +43,8 @@ public class ConnectKitPlugin: NSObject, FlutterPlugin {
     public static func detachFromEngine(for registrar: FlutterPluginRegistrar) {
         // Clean up: Unregister the Pigeon API to prevent leaks and stop messages.
         ConnectKitHostApiSetup.setUp(binaryMessenger: registrar.messenger(), api: nil)
+
+        CKLogger.i(tag: TAG, message: "Plugin detached from engine")
     }
 }
 

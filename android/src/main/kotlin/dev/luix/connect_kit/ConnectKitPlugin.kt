@@ -1,8 +1,8 @@
 package dev.luix.connect_kit
 
-import android.app.Activity
-import android.util.Log
 import androidx.annotation.NonNull
+import dev.luix.connect_kit.logging.CKLogger
+import dev.luix.connect_kit.pigeon.ConnectKitHostApi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -11,22 +11,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 
-import dev.luix.connect_kit.pigeon.ConnectKitHostApi
-import dev.luix.connect_kit.CKHostApi
-
 // Tag for logging purposes
 private const val TAG = "ConnectKitPlugin"
 
 /**
  * Main entry point for the ConnectKit Flutter plugin - Composition Root and Lifecycle Manager
  *
- * This class manages the plugin lifecycle, handles communication with the Flutter engine,
- * and coordinates between Flutter and native Android components. It implements both
- * [FlutterPlugin] and [ActivityAware] to properly handle plugin and Activity lifecycle events.
+ * This class manages the plugin lifecycle, handles communication with the Flutter engine, and
+ * coordinates between Flutter and native Android components. It implements both [FlutterPlugin] and
+ * [ActivityAware] to properly handle plugin and Activity lifecycle events.
  *
  * @constructor Creates a new ConnectKitPlugin instance
  */
-class ConnectKitPlugin: FlutterPlugin, ActivityAware {
+class ConnectKitPlugin : FlutterPlugin, ActivityAware {
 
     private var hostApi: CKHostApi? = null
 
@@ -43,13 +40,16 @@ class ConnectKitPlugin: FlutterPlugin, ActivityAware {
      *
      * @param flutterPluginBinding Provides the binding to the Flutter engine
      */
-    override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d(TAG, "onAttachedToEngine: Setting up CKHostApi")
+    override fun onAttachedToEngine(
+            @NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
+    ) {
+        CKLogger.i(TAG, "onAttachedToEngine: Setting up CKHostApi")
         // DEPENDENCY INJECTION: Instantiate services here (The Composition Root).
         // val flutterApi = ConnectKitFlutterApi(flutterPluginBinding.binaryMessenger)
 
         // Services
-        // val permissionService = PermissionService(flutterPluginBinding.applicationContext, pluginScope)
+        // val permissionService = PermissionService(flutterPluginBinding.applicationContext,
+        // pluginScope)
 
         // INFO: In the future we will be passing: permissionService, flutterApi, pluginScope
         hostApi = CKHostApi()
@@ -63,60 +63,65 @@ class ConnectKitPlugin: FlutterPlugin, ActivityAware {
     /**
      * Called when the plugin is attached to an Activity.
      *
-     * This method provides the Activity reference to the host API, enabling it to
-     * perform operations that require Activity context.
+     * This method provides the Activity reference to the host API, enabling it to perform
+     * operations that require Activity context.
      *
      * @param binding Provides access to the Activity and related components
      */
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        Log.d(TAG, "onAttachedToActivity: ...")
+        CKLogger.i(TAG, "onAttachedToActivity: ...")
         // ATTACH ACTIVITY: Store the reference and perform setup requiring the Activity.
         hostApi?.onAttachedToActivity(binding)
-            ?: Log.w(TAG, "onAttachedToActivity called but hostApi is null")
+                ?: CKLogger.w(TAG, "onAttachedToActivity called but hostApi is null")
     }
 
     /**
      * Called when the Activity is about to be destroyed due to a configuration change.
      *
-     * This method allows the plugin to clean up transient Activity references that
-     * should not survive configuration changes (e.g., screen rotation).
+     * This method allows the plugin to clean up transient Activity references that should not
+     * survive configuration changes (e.g., screen rotation).
      *
      * @param binding The ActivityPluginBinding that was previously attached
      */
     override fun onDetachedFromActivityForConfigChanges() {
-        Log.d(TAG, "onDetachedFromActivityForConfigChanges: ...")
-        // CONFIGURATION CHANGE: Clean up transient Activity references (e.g., screen rotation).
+        CKLogger.i(TAG, "onDetachedFromActivityForConfigChanges: ...")
+        // CONFIGURATION CHANGE: Clean up transient Activity references (e.g., screen rotation)
         hostApi?.onDetachedFromActivity()
-            ?: Log.w(TAG, "onDetachedFromActivityForConfigChanges called but hostApi is null")
+                ?: CKLogger.w(
+                        TAG,
+                        "onDetachedFromActivityForConfigChanges called but hostApi is null"
+                )
     }
 
     /**
      * Called when the Activity has been re-created after a configuration change.
      *
-     * This method allows the plugin to re-establish the Activity reference and
-     * re-register any listeners or launchers that were cleaned up during the configuration change.
+     * This method allows the plugin to re-establish the Activity reference and re-register any
+     * listeners or launchers that were cleaned up during the configuration change.
      *
      * @param binding The new ActivityPluginBinding after re-creation
      */
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-        Log.d(TAG, "onReattachedToActivityForConfigChanges: ...")
+        CKLogger.i(TAG, "onReattachedToActivityForConfigChanges: ...")
         // RE-ATTACH: Re-establish the Activity reference and re-register listeners/launchers.
         hostApi?.onAttachedToActivity(binding)
-            ?: Log.w(TAG, "onReattachedToActivityForConfigChanges called but hostApi is null")
+                ?: CKLogger.w(
+                        TAG,
+                        "onReattachedToActivityForConfigChanges called but hostApi is null"
+                )
     }
-
 
     /**
      * Called when the Activity is permanently destroyed.
      *
-     * This method performs final cleanup of the Activity reference and any
-     * resources that should not persist after the Activity is destroyed.
+     * This method performs final cleanup of the Activity reference and any resources that should
+     * not persist after the Activity is destroyed.
      */
     override fun onDetachedFromActivity() {
-        Log.d(TAG, "onDetachedFromActivity: ...")
+        CKLogger.i(TAG, "onDetachedFromActivity: ...")
         // DETACH ACTIVITY: Final cleanup of the Activity reference.
         hostApi?.onDetachedFromActivity()
-            ?: Log.w(TAG, "onDetachedFromActivity called but hostApi is null")
+                ?: CKLogger.w(TAG, "onDetachedFromActivity called but hostApi is null")
     }
 
     // --- Plugin Detachment ---
@@ -124,16 +129,17 @@ class ConnectKitPlugin: FlutterPlugin, ActivityAware {
     /**
      * Called when the plugin is detached from the Flutter engine.
      *
-     * This method performs final cleanup, including unregistering the Pigeon API
-     * and canceling the CoroutineScope to prevent memory leaks.
+     * This method performs final cleanup, including unregistering the Pigeon API and canceling the
+     * CoroutineScope to prevent memory leaks.
      *
      * @param binding The FlutterPluginBinding that was previously attached
      */
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-        Log.d(TAG, "onDetachedFromEngine: final cleanup")
-        // FINAL CLEANUP: Unregister the Pigeon API and cancel the Coroutine Scope.
+        CKLogger.i(TAG, "onDetachedFromEngine: final cleanup")
+
+        // FINAL CLEANUP: Unregister the Pigeon API and cancel the Coroutine Scope
         ConnectKitHostApi.setUp(binding.binaryMessenger, null)
-        pluginScope.cancel() // Crucial to prevent leaks and stop all background work.
+        pluginScope.cancel() // Crucial to prevent leaks and stop all background work
         hostApi = null
     }
 }
