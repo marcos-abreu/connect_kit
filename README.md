@@ -15,31 +15,19 @@
 
 It simplifies complex native integrations behind a clean, type-safe Dart API — helping you focus on your app experience, not platform differences.
 
-**Why developers love ConnectKit:**
-- 🧩 **Unified API:** One consistent interface for both platforms.
-- ⚡ **Optimized for health data:** Minimal native overhead, maximum Dart logic.
-- ⚡ **Performance-first architecture:** Built for speed with minimal platform overhead.
-- 🔒 **Privacy-aware:** Respects each platform’s permission and security model.
-
 ---
 
 ## 3. Core Features
 
-✅ **Seamless Authorization** – Request and manage health permissions.
+📶 **Extensive Health Metric Coverage** - Supports a wide and growing variety of common and specialized data types, including workout, sleep, nutrition, biometrics, and characteristics types.
 
-📊 **Consistent data model** – Read steps, workouts, heart rate, and more via a unified data model.
+🔗 **Unified Platform API** - Combines all core operations—permission management, data reading, writing, and deletion—into a single, intuitive interface.
 
-🔄 **Read & Write Support** – Read and write data from both platforms.
+🔀 **Platform-Agnostic Data Schema** - Provides a single, unified Dart data model for all health metrics, completely abstracting the disparate HealthKit and Health Connect platform schemas.
 
-🧠 **Comprehensive Data Types** – Supporting steps, heart rate, sleep, workouts, and more.
+🛡️ **Robust and Maintainable Core** - Built on a modern, layered architecture with comprehensive test coverage, guaranteeing stability and contribution clarity for long-term project viability.
 
-✅ **Zero-Overhead Debug Logging** – Structured, platform-native logs that are fully stripped in release builds
-
-🚀 **Modern Architecture** – Layered design emphasizing maintainability and contribution clarity.
-
-🧪 **High Test Coverage** – Robust unit tests and CI verification to maintain stability.
-
-📱 **Example app** — see it ConnectKit works in minutes
+⚡ **Optimized Architecture** - Engineered for speed and resource efficiency, this architecture features minimal runtime overhead, ensuring rapid data processing in production applications.
 
 ---
 
@@ -49,10 +37,6 @@ Add `connect_kit` to your Flutter project:
 
 ```bash
 flutter pub add connect_kit
-```
-Then run:
-```bash
-flutter pub get
 ```
 
 > ⚙️ **Platform Setup Required:**
@@ -96,10 +80,14 @@ That’s all you need to start reading health data from both, iOS and Android, p
 ## 6. Documentation & Support
 
 📘 **API Reference:** [View on pub.dev](https://pub.dev/packages/connect_kit)
+
 🧭 **Full Documentation:** [Platform setup, advanced usage, and architecture overview →](doc/Architecture.md)
+
 🐛 **Issue Tracker:** [GitHub Issues](https://github.com/marcos-abreu/connect_kit/issues)
 
-Need help or found a bug? Open an [issue](https://github.com/marcos-abreu/connect_kit/issues) — your feedback drives improvements.
+
+*Need help or found a bug? Open an [issue](https://github.com/marcos-abreu/connect_kit/issues) — your feedback drives improvements.*
+
 ---
 
 ## 7. Contributing
