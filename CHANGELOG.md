@@ -9,14 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [0.3.2] - 2025-10-27
 
-  Changed
-  - change doc folder structure to pub layout convention
-  - apply lint rules to enum helper utility
-
-[Unreleased]: https://github.com/marcos-abreu/connect_kit/compare/v0.3.2...HEAD
-
-[0.3.1] - 2025-10-27
-
   Fixed
 
   - CKAccessStatus Equality - Fixed equality and hashCode logic to ensure consistent comparison of permission status
@@ -37,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   - Record Schema Structure - Modified internal data model structure to support improved record handling
   - Test Architecture - Enhanced test infrastructure with proper Mocktail parameter matching and dependency injection
+  - change doc folder structure to pub layout convention
+  - apply lint rules to enum helper utility
 
   Testing
 
@@ -45,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved test reliability with proper mock setup and verification
   - All unit tests now pass successfully
 
-[Unreleased]: https://github.com/marcos-abreu/connect_kit/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/marcos-abreu/connect_kit/compare/v0.3.2...HEAD
 
 ## [0.3.0] - 2025-10-26
 
