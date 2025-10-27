@@ -34,3 +34,13 @@ else
 fi
 
 echo "🎉 Code generation completed successfully."
+
+echo ""
+
+dart run tool/generate_ck_type.dart
+if [ $? -eq 0 ]; then
+    echo "✅ CKTypes code generation completed successfully."
+else
+    echo "❌ CKTypes code generation failed."
+    exit 1
+fi
