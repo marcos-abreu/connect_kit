@@ -35,8 +35,46 @@ import 'package:pigeon/pigeon.dart';
     // copyrightHeader: 'Copyright(c) 2025-present ConnectKit. All rights reserved.',
   ),
 )
+
+/// TODO: Add documentation
+class AccessStatusMessage {
+  Map<String, Object>? dataAccess; // INFO: inner-maps not supported
+  String? historyAccess;
+  String? backgroundAccess;
+
+  AccessStatusMessage({
+    this.dataAccess,
+    this.historyAccess,
+    this.backgroundAccess,
+  });
+}
+
 @HostApi()
 abstract class ConnectKitHostApi {
   @async
   String getPlatformVersion();
+
+  @async
+  String isSdkAvailable();
+
+  @async
+  bool requestPermissions(
+    List<String>? readTypes,
+    List<String>? writeTypes,
+    bool? forHistory,
+    bool? forBackground,
+  );
+
+  @async
+  AccessStatusMessage checkPermissions(
+    Map<String, List<String>>? forData,
+    bool? forHistory,
+    bool? forBackground,
+  );
+
+  @async
+  bool revokePermissions();
+
+  @async
+  bool openHealthSettings();
 }

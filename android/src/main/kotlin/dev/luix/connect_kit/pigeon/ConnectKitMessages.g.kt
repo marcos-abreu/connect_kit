@@ -34,6 +34,36 @@ private object ConnectKitMessagesPigeonUtils {
       )
     }
   }
+  fun deepEquals(a: Any?, b: Any?): Boolean {
+    if (a is ByteArray && b is ByteArray) {
+        return a.contentEquals(b)
+    }
+    if (a is IntArray && b is IntArray) {
+        return a.contentEquals(b)
+    }
+    if (a is LongArray && b is LongArray) {
+        return a.contentEquals(b)
+    }
+    if (a is DoubleArray && b is DoubleArray) {
+        return a.contentEquals(b)
+    }
+    if (a is Array<*> && b is Array<*>) {
+      return a.size == b.size &&
+          a.indices.all{ deepEquals(a[it], b[it]) }
+    }
+    if (a is List<*> && b is List<*>) {
+      return a.size == b.size &&
+          a.indices.all{ deepEquals(a[it], b[it]) }
+    }
+    if (a is Map<*, *> && b is Map<*, *>) {
+      return a.size == b.size && a.all {
+          (b as Map<Any?, Any?>).containsKey(it.key) &&
+          deepEquals(it.value, b[it.key])
+      }
+    }
+    return a == b
+  }
+      
 }
 
 /**
@@ -47,12 +77,63 @@ class FlutterError (
   override val message: String? = null,
   val details: Any? = null
 ) : Throwable()
+
+/**
+ * TODO: Add documentation
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class AccessStatusMessage (
+  val dataAccess: Map<String, Any>? = null,
+  val historyAccess: String? = null,
+  val backgroundAccess: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): AccessStatusMessage {
+      val dataAccess = pigeonVar_list[0] as Map<String, Any>?
+      val historyAccess = pigeonVar_list[1] as String?
+      val backgroundAccess = pigeonVar_list[2] as String?
+      return AccessStatusMessage(dataAccess, historyAccess, backgroundAccess)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      dataAccess,
+      historyAccess,
+      backgroundAccess,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other !is AccessStatusMessage) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return ConnectKitMessagesPigeonUtils.deepEquals(toList(), other.toList())  }
+
+  override fun hashCode(): Int = toList().hashCode()
+}
 private open class ConnectKitMessagesPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
-    return     super.readValueOfType(type, buffer)
+    return when (type) {
+      129.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          AccessStatusMessage.fromList(it)
+        }
+      }
+      else -> super.readValueOfType(type, buffer)
+    }
   }
   override fun writeValue(stream: ByteArrayOutputStream, value: Any?)   {
-    super.writeValue(stream, value)
+    when (value) {
+      is AccessStatusMessage -> {
+        stream.write(129)
+        writeValue(stream, value.toList())
+      }
+      else -> super.writeValue(stream, value)
+    }
   }
 }
 
@@ -60,6 +141,11 @@ private open class ConnectKitMessagesPigeonCodec : StandardMessageCodec() {
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface ConnectKitHostApi {
   fun getPlatformVersion(callback: (Result<String>) -> Unit)
+  fun isSdkAvailable(callback: (Result<String>) -> Unit)
+  fun requestPermissions(readTypes: List<String>?, writeTypes: List<String>?, forHistory: Boolean?, forBackground: Boolean?, callback: (Result<Boolean>) -> Unit)
+  fun checkPermissions(forData: Map<String, List<String>>?, forHistory: Boolean?, forBackground: Boolean?, callback: (Result<AccessStatusMessage>) -> Unit)
+  fun revokePermissions(callback: (Result<Boolean>) -> Unit)
+  fun openHealthSettings(callback: (Result<Boolean>) -> Unit)
 
   companion object {
     /** The codec used by ConnectKitHostApi. */
@@ -75,6 +161,105 @@ interface ConnectKitHostApi {
         if (api != null) {
           channel.setMessageHandler { _, reply ->
             api.getPlatformVersion{ result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.isSdkAvailable$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.isSdkAvailable{ result: Result<String> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.requestPermissions$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val readTypesArg = args[0] as List<String>?
+            val writeTypesArg = args[1] as List<String>?
+            val forHistoryArg = args[2] as Boolean?
+            val forBackgroundArg = args[3] as Boolean?
+            api.requestPermissions(readTypesArg, writeTypesArg, forHistoryArg, forBackgroundArg) { result: Result<Boolean> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.checkPermissions$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val forDataArg = args[0] as Map<String, List<String>>?
+            val forHistoryArg = args[1] as Boolean?
+            val forBackgroundArg = args[2] as Boolean?
+            api.checkPermissions(forDataArg, forHistoryArg, forBackgroundArg) { result: Result<AccessStatusMessage> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.revokePermissions$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.revokePermissions{ result: Result<Boolean> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(ConnectKitMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.openHealthSettings$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.openHealthSettings{ result: Result<Boolean> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(ConnectKitMessagesPigeonUtils.wrapError(error))

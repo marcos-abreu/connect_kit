@@ -64,11 +64,125 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
   return value as! T?
 }
 
+func deepEqualsConnectKitMessages(_ lhs: Any?, _ rhs: Any?) -> Bool {
+  let cleanLhs = nilOrValue(lhs) as Any?
+  let cleanRhs = nilOrValue(rhs) as Any?
+  switch (cleanLhs, cleanRhs) {
+  case (nil, nil):
+    return true
+
+  case (nil, _), (_, nil):
+    return false
+
+  case is (Void, Void):
+    return true
+
+  case let (cleanLhsHashable, cleanRhsHashable) as (AnyHashable, AnyHashable):
+    return cleanLhsHashable == cleanRhsHashable
+
+  case let (cleanLhsArray, cleanRhsArray) as ([Any?], [Any?]):
+    guard cleanLhsArray.count == cleanRhsArray.count else { return false }
+    for (index, element) in cleanLhsArray.enumerated() {
+      if !deepEqualsConnectKitMessages(element, cleanRhsArray[index]) {
+        return false
+      }
+    }
+    return true
+
+  case let (cleanLhsDictionary, cleanRhsDictionary) as ([AnyHashable: Any?], [AnyHashable: Any?]):
+    guard cleanLhsDictionary.count == cleanRhsDictionary.count else { return false }
+    for (key, cleanLhsValue) in cleanLhsDictionary {
+      guard cleanRhsDictionary.index(forKey: key) != nil else { return false }
+      if !deepEqualsConnectKitMessages(cleanLhsValue, cleanRhsDictionary[key]!) {
+        return false
+      }
+    }
+    return true
+
+  default:
+    // Any other type shouldn't be able to be used with pigeon. File an issue if you find this to be untrue.
+    return false
+  }
+}
+
+func deepHashConnectKitMessages(value: Any?, hasher: inout Hasher) {
+  if let valueList = value as? [AnyHashable] {
+     for item in valueList { deepHashConnectKitMessages(value: item, hasher: &hasher) }
+     return
+  }
+
+  if let valueDict = value as? [AnyHashable: AnyHashable] {
+    for key in valueDict.keys { 
+      hasher.combine(key)
+      deepHashConnectKitMessages(value: valueDict[key]!, hasher: &hasher)
+    }
+    return
+  }
+
+  if let hashableValue = value as? AnyHashable {
+    hasher.combine(hashableValue.hashValue)
+  }
+
+  return hasher.combine(String(describing: value))
+}
+
+    
+
+/// TODO: Add documentation
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct AccessStatusMessage: Hashable {
+  var dataAccess: [String: Any]? = nil
+  var historyAccess: String? = nil
+  var backgroundAccess: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> AccessStatusMessage? {
+    let dataAccess: [String: Any]? = nilOrValue(pigeonVar_list[0])
+    let historyAccess: String? = nilOrValue(pigeonVar_list[1])
+    let backgroundAccess: String? = nilOrValue(pigeonVar_list[2])
+
+    return AccessStatusMessage(
+      dataAccess: dataAccess,
+      historyAccess: historyAccess,
+      backgroundAccess: backgroundAccess
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      dataAccess,
+      historyAccess,
+      backgroundAccess,
+    ]
+  }
+  static func == (lhs: AccessStatusMessage, rhs: AccessStatusMessage) -> Bool {
+    return deepEqualsConnectKitMessages(lhs.toList(), rhs.toList())  }
+  func hash(into hasher: inout Hasher) {
+    deepHashConnectKitMessages(value: toList(), hasher: &hasher)
+  }
+}
 
 private class ConnectKitMessagesPigeonCodecReader: FlutterStandardReader {
+  override func readValue(ofType type: UInt8) -> Any? {
+    switch type {
+    case 129:
+      return AccessStatusMessage.fromList(self.readValue() as! [Any?])
+    default:
+      return super.readValue(ofType: type)
+    }
+  }
 }
 
 private class ConnectKitMessagesPigeonCodecWriter: FlutterStandardWriter {
+  override func writeValue(_ value: Any) {
+    if let value = value as? AccessStatusMessage {
+      super.writeByte(129)
+      super.writeValue(value.toList())
+    } else {
+      super.writeValue(value)
+    }
+  }
 }
 
 private class ConnectKitMessagesPigeonCodecReaderWriter: FlutterStandardReaderWriter {
@@ -89,6 +203,11 @@ class ConnectKitMessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sen
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol ConnectKitHostApi {
   func getPlatformVersion(completion: @escaping (Result<String, Error>) -> Void)
+  func isSdkAvailable(completion: @escaping (Result<String, Error>) -> Void)
+  func requestPermissions(readTypes: [String]?, writeTypes: [String]?, forHistory: Bool?, forBackground: Bool?, completion: @escaping (Result<Bool, Error>) -> Void)
+  func checkPermissions(forData: [String: [String]]?, forHistory: Bool?, forBackground: Bool?, completion: @escaping (Result<AccessStatusMessage, Error>) -> Void)
+  func revokePermissions(completion: @escaping (Result<Bool, Error>) -> Void)
+  func openHealthSettings(completion: @escaping (Result<Bool, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -111,6 +230,90 @@ class ConnectKitHostApiSetup {
       }
     } else {
       getPlatformVersionChannel.setMessageHandler(nil)
+    }
+    let isSdkAvailableChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.isSdkAvailable\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      isSdkAvailableChannel.setMessageHandler { _, reply in
+        api.isSdkAvailable { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      isSdkAvailableChannel.setMessageHandler(nil)
+    }
+    let requestPermissionsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.requestPermissions\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      requestPermissionsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let readTypesArg: [String]? = nilOrValue(args[0])
+        let writeTypesArg: [String]? = nilOrValue(args[1])
+        let forHistoryArg: Bool? = nilOrValue(args[2])
+        let forBackgroundArg: Bool? = nilOrValue(args[3])
+        api.requestPermissions(readTypes: readTypesArg, writeTypes: writeTypesArg, forHistory: forHistoryArg, forBackground: forBackgroundArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      requestPermissionsChannel.setMessageHandler(nil)
+    }
+    let checkPermissionsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.checkPermissions\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      checkPermissionsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let forDataArg: [String: [String]]? = nilOrValue(args[0])
+        let forHistoryArg: Bool? = nilOrValue(args[1])
+        let forBackgroundArg: Bool? = nilOrValue(args[2])
+        api.checkPermissions(forData: forDataArg, forHistory: forHistoryArg, forBackground: forBackgroundArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      checkPermissionsChannel.setMessageHandler(nil)
+    }
+    let revokePermissionsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.revokePermissions\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      revokePermissionsChannel.setMessageHandler { _, reply in
+        api.revokePermissions { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      revokePermissionsChannel.setMessageHandler(nil)
+    }
+    let openHealthSettingsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.connect_kit.ConnectKitHostApi.openHealthSettings\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      openHealthSettingsChannel.setMessageHandler { _, reply in
+        api.openHealthSettings { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      openHealthSettingsChannel.setMessageHandler(nil)
     }
   }
 }
