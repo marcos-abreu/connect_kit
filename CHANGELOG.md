@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+[0.3.1] - 2025-10-27
+
+  Fixed
+
+  - CKAccessStatus Equality - Fixed equality and hashCode logic to ensure consistent comparison of permission status
+  objects
+  - Permission Service Testing - Enabled PermissionService dependency injection for improved testability
+  - Test Infrastructure - Fixed mock setup and parameter matching in ConnectKit facade tests
+
+  Added
+
+  - Permission Service Tests - Added comprehensive test coverage for all PermissionService methods:
+    - checkPermissions delegation and error handling
+    - revokePermissions delegation and error handling
+    - openHealthSettings delegation and error handling
+  - ConnectKit Facade Tests - Complete test suite verifying proper delegation patterns between public API and service
+  layer
+
+  Changed
+
+  - Record Schema Structure - Modified internal data model structure to support improved record handling
+  - Test Architecture - Enhanced test infrastructure with proper Mocktail parameter matching and dependency injection
+
+  Testing
+
+  - Fixed all failing unit tests in ConnectKit facade
+  - Implemented missing test cases for permission-related operations
+  - Improved test reliability with proper mock setup and verification
+  - All unit tests now pass successfully
+
+[Unreleased]: https://github.com/marcos-abreu/connect_kit/compare/v0.3.1...HEAD
+
 ## [0.3.0] - 2025-10-26
 
 ### Added
