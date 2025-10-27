@@ -19,7 +19,7 @@ It simplifies complex native integrations behind a clean, type-safe Dart API —
 
 ## 3. Core Features
 
-📶 **Extensive Health Metric Coverage** - Supports a wide and growing variety of common and specialized data types, including workout, sleep, nutrition, biometrics, and characteristics types.
+📶 **Extensive Health Types Coverage** - Supports a wide and growing variety of common and specialized data types, including workout, sleep, nutrition, biometrics, and characteristics types.
 
 🔗 **Unified Platform API** - Combines all core operations—permission management, data reading, writing, and deletion—into a single, intuitive interface.
 
