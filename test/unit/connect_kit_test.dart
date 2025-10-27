@@ -137,11 +137,11 @@ void main() {
 
       // Assert
       verify(() => mockPermissionService.requestPermissions(
-        readTypes: {},
-        writeTypes: {},
-        forHistory: false,
-        forBackground: false,
-      )).called(1);
+            readTypes: {},
+            writeTypes: {},
+            forHistory: false,
+            forBackground: false,
+          )).called(1);
       expect(requestResult, true);
     });
     test('requestPermission re-throws exceptions from PermissionService',
@@ -164,11 +164,11 @@ void main() {
         throwsA(isA<Exception>()),
       );
       verify(() => mockPermissionService.requestPermissions(
-        readTypes: {},
-        writeTypes: {},
-        forHistory: false,
-        forBackground: false,
-      )).called(1);
+            readTypes: {},
+            writeTypes: {},
+            forHistory: false,
+            forBackground: false,
+          )).called(1);
     });
 
     test(
@@ -193,10 +193,10 @@ void main() {
 
       // Assert
       verify(() => mockPermissionService.checkPermissions(
-        forData: {},
-        forHistory: false,
-        forBackground: false,
-      )).called(1);
+            forData: {},
+            forHistory: false,
+            forBackground: false,
+          )).called(1);
       expect(actualAccessStatus, expectedAccessStatus);
     });
 
@@ -218,10 +218,10 @@ void main() {
         throwsA(isA<Exception>()),
       );
       verify(() => mockPermissionService.checkPermissions(
-        forData: {},
-        forHistory: false,
-        forBackground: false,
-      )).called(1);
+            forData: {},
+            forHistory: false,
+            forBackground: false,
+          )).called(1);
     });
 
     test(
