@@ -7,7 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/marcos-abreu/connect_kit/compare/v0.2.0...HEAD
+## [0.3.0] - 2025-10-26
+
+### Added
+
+- **Complete Permissions API Implementation** - Comprehensive permission management across all platforms:
+  - **PermissionService** - Unified high-level API for permission operations
+  - **requestPermissions()** - Request health data permissions with granular control
+  - **checkPermissions()** - Check current permission status with detailed CKAccessStatus
+  - **revokePermissions()** - Revoke all health data permissions
+  - **openHealthSettings()** - Open platform health settings for user configuration
+
+- **Enhanced Type System** - Robust data model for permission management:
+  - **CKAccessStatus** - Comprehensive permission status container
+  - **CKPermissionStatus** - Granular permission states (granted, denied, notDetermined, etc.)
+  - **CKAccessType** - Read/write access type enumeration
+  - **CKType** - Extended health data type system with auto-generation
+  - **CKSDKStatus** - Platform SDK availability checking
+
+- **Platform Implementation**:
+  - **Android** - Full Health Connect integration with permission mapping
+  - **iOS** - Complete HealthKit implementation with proper authorization flow
+  - **Cross-platform** - Unified API surface with consistent behavior
+
+- **Example App Overhaul** - Comprehensive permission demonstration:
+  - **PermissionDemoScreen** - Interactive permission testing interface
+  - **Visual feedback** - Color-coded results (green/red) for success/failure states
+  - **Code snippets** - Real-time code generation for each permission operation
+  - **Platform-specific guidance** - Contextual help for Android vs iOS behavior
+
+- **Documentation & Research**:
+  - **Extensive research docs** - Platform-specific implementation guides
+  - **Type mapping analysis** - Comprehensive Health Connect ↔ HealthKit mapping
+  - **Implementation patterns** - Best practices for health data handling
+
+### Changed
+
+- **Android Dependencies** - Added Health Connect as official dependency
+- **Example App Configuration** - Updated platform setup for health permissions
+- **Code Generation** - Enhanced CKType auto-generation tooling
+- **Test Infrastructure** - Updated Pigeon generated test helpers
+
+### Fixed
+
+- **Version consistency** - Fixed plugin version configuration
+- **Documentation formatting** - Improved README presentation and clarity
+
+[Unreleased]: https://github.com/marcos-abreu/connect_kit/compare/v0.3.0...HEAD
 
 ## [0.2.0] - 2025-10-21
 
