@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:connect_kit/src/logging/ck_logger.dart';
-import 'package:connect_kit/src/models/ck_record/ck_type.dart';
+import 'package:connect_kit/src/models/schema/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
 import 'package:connect_kit/src/models/ck_permission_status.dart';
 

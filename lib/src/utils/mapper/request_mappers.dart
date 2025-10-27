@@ -1,4 +1,4 @@
-import 'package:connect_kit/src/models/ck_record/ck_type.dart';
+import 'package:connect_kit/src/models/schema/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
 
 /// Utility extensions for converting ConnectKit types to platform channel representations.

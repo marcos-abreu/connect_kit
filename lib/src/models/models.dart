@@ -1,5 +1,5 @@
 // Record types
-export 'package:connect_kit/src/models/ck_record/ck_type.dart';
+export 'package:connect_kit/src/models/schema/ck_type.dart';
 
 // Response types
 export 'package:connect_kit/src/models/ck_sdk_status.dart';

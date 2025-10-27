@@ -3,7 +3,7 @@ import 'package:connect_kit/src/utils/operation_guard.dart';
 import 'package:connect_kit/src/utils/mapper/request_mappers.dart';
 import 'package:connect_kit/src/utils/mapper/response_mappers.dart';
 
-import 'package:connect_kit/src/models/ck_record/ck_type.dart';
+import 'package:connect_kit/src/models/schema/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
 import 'package:connect_kit/src/models/ck_sdk_status.dart';
 import 'package:connect_kit/src/models/ck_access_status.dart';

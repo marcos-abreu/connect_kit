@@ -85,8 +85,6 @@ class CKType {
   static const skinTemperature = CKType._('skinTemperature');
 
   // iOS only
-  static const bloodPressureDiastolic = CKType._('bloodPressureDiastolic');
-  static const bloodPressureSystolic = CKType._('bloodPressureSystolic');
   static const electrocardiogram = CKType._('electrocardiogram');
 
 // --- Wellness
@@ -155,7 +153,7 @@ class _WorkoutType extends CKType {
 
   // Default components for this composite type
   @override
-  Set<CKType> get defaultComponents => {CKType._('workout'), distance};
+  Set<CKType> get defaultComponents => {this, distance};
 }
 
 /// Blood pressure composite type

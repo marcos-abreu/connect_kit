@@ -4,8 +4,8 @@ import 'dart:io';
 void main() {
   print('🔍 Scanning CKType definitions...');
 
-  final inputFilePath = 'lib/src/models/ck_record/ck_type.dart';
-  final outputFilePath = 'lib/src/models/ck_record/ck_type.g.dart';
+  final inputFilePath = 'lib/src/models/schema/ck_type.dart';
+  final outputFilePath = 'lib/src/models/schema/ck_type.g.dart';
 
   final file = File(inputFilePath);
   if (!file.existsSync()) {

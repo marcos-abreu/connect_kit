@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:connect_kit/src/pigeon/connect_kit_messages.g.dart';
 import 'package:connect_kit/src/services/operations_service.dart';
 import 'package:connect_kit/src/services/permission_service.dart';
-import 'package:connect_kit/src/models/ck_record/ck_type.dart';
+import 'package:connect_kit/src/models/schema/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
 import 'package:connect_kit/src/models/ck_access_status.dart';
 import 'package:connect_kit/src/models/ck_sdk_status.dart';
