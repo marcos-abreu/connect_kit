@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:connect_kit/src/logging/ck_logger.dart';
 import 'package:connect_kit/src/models/ck_record/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
@@ -25,55 +26,7 @@ class CKAccessStatus {
     this.backgroundAccess = CKPermissionStatus.unknown,
   });
 
-  /// Creates a CKAccessStatus from a message returned by the native platform
-  // factory CKAccessStatus.fromMessage(
-  //   Map<String, Map<String, String>>? dataAccessMap, {
-  //   String? historyAccessString,
-  //   String? backgroundAccessString,
-  // }) {
-  //   // Parse history access status (Android only)
-  //   final historyAccess = historyAccessString != null
-  //       ? CKPermissionStatus.fromString(historyAccessString)
-  //       : CKPermissionStatus.unknown;
-
-  //   // Parse background access status (Android only)
-  //   final backgroundAccess = backgroundAccessString != null
-  //       ? CKPermissionStatus.fromString(backgroundAccessString)
-  //       : CKPermissionStatus.unknown;
-
-  //   // Convert data access map from strings to enums
-  //   final Map<CKType, Map<CKAccessType, CKPermissionStatus>> dataAccess = {};
-
-  //   if (dataAccessMap != null) {
-  //     for (final entry in dataAccessMap.entries) {
-  //       try {
-  //         // Parse the health type from string key
-  //         final healthType = CKType.fromString(entry.key);
-
-  //         // Parse the access types and their statuses
-  //         final Map<CKAccessType, CKPermissionStatus> accessTypes = {};
-  //         for (final accessEntry in entry.value.entries) {
-  //           final accessType = CKAccessType.fromString(accessEntry.key);
-  //           final permissionStatus =
-  //               CKPermissionStatus.fromString(accessEntry.value);
-  //           accessTypes[accessType] = permissionStatus;
-  //         }
-
-  //         dataAccess[healthType] = accessTypes;
-  //       } catch (e) {
-  //         // Skip invalid health types but continue processing others
-  //         continue;
-  //       }
-  //     }
-  //   }
-
-  //   return CKAccessStatus(
-  //     dataAccess: dataAccess,
-  //     historyAccess: historyAccess,
-  //     backgroundAccess: backgroundAccess,
-  //   );
-  // }
-
+  /// TODO: add documentation
   factory CKAccessStatus.fromMessage(
     Map<String, Map<String, String>>? dataAccessMap, {
     String? historyAccessString,
@@ -199,22 +152,13 @@ class CKAccessStatus {
     return other is CKAccessStatus &&
         other.historyAccess == historyAccess &&
         other.backgroundAccess == backgroundAccess &&
-        _mapEquals(other.dataAccess, dataAccess);
+        const DeepCollectionEquality().equals(other.dataAccess, dataAccess);
   }
 
   @override
   int get hashCode {
     return historyAccess.hashCode ^
         backgroundAccess.hashCode ^
-        dataAccess.hashCode;
-  }
-
-  /// Helper method to compare maps for equality
-  bool _mapEquals<T, U>(Map<T, U> a, Map<T, U> b) {
-    if (a.length != b.length) return false;
-    for (final key in a.keys) {
-      if (!b.containsKey(key) || b[key] != a[key]) return false;
-    }
-    return true;
+        const DeepCollectionEquality().hash(dataAccess);
   }
 }
