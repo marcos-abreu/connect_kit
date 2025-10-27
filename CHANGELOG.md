@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+[0.3.2] - 2025-10-27
+
+  Changed
+  - change doc folder structure to pub layout convention
+  - apply lint rules to enum helper utility
+
+[Unreleased]: https://github.com/marcos-abreu/connect_kit/compare/v0.3.2...HEAD
+
 [0.3.1] - 2025-10-27
 
   Fixed
