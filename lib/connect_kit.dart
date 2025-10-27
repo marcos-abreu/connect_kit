@@ -1,7 +1,7 @@
 library;
 
 import 'package:flutter/foundation.dart'; // Required for @visibleForTesting
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 
 // The auto-generated Pigeon code lives here.
 import 'package:connect_kit/src/pigeon/connect_kit_messages.g.dart';
@@ -29,10 +29,12 @@ class ConnectKit {
   ConnectKit.forTesting({
     ConnectKitHostApi? hostApi,
     OperationsService? operationsService,
+    PermissionService? permissionService,
   }) {
     _initialize(
       injectedHostApi: hostApi,
       injectedOperationsService: operationsService,
+      injectedPermissionService: permissionService,
     ); // Initialize immediately on construction
   }
 
