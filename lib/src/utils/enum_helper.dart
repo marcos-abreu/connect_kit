@@ -8,8 +8,11 @@
 /// If [defaultValue] is omitted, the **last** item in the [values] list is returned
 ///
 /// Returns the corresponding enum value, or the calculated default value if the name is not found
-T enumFromStringOrDefault<T extends Enum>(List<T> values, String name,
-    [T? defaultValue]) {
+T enumFromStringOrDefault<T extends Enum>(
+  List<T> values,
+  String name, [
+  T? defaultValue,
+]) {
   final effectiveDefault =
       defaultValue ?? values.last; // Use the provided default, or the last item
 
