@@ -3,8 +3,12 @@ package dev.luix.connect_kit
 import android.app.Activity
 import android.os.Build
 import androidx.fragment.app.FragmentActivity
+import dev.luix.connect_kit.pigeon.AccessStatusMessage
 import dev.luix.connect_kit.pigeon.ConnectKitHostApi
+import dev.luix.connect_kit.services.PermissionService
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Implementation of the ConnectKitHostApi for Android platform.
@@ -15,7 +19,10 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
  *
  * @constructor Creates a new CKHostApi instance
  */
-class CKHostApi() : ConnectKitHostApi {
+class CKHostApi(
+    private val permissionService: PermissionService,
+    private val scope: CoroutineScope // Injected scope
+) : ConnectKitHostApi {
 
     // Reference to the currently attached Activity.
     // This reference is nullable to properly handle lifecycle events where the Activity
@@ -39,7 +46,7 @@ class CKHostApi() : ConnectKitHostApi {
         // The host Activity must be a FragmentActivity to use modern Androidx Activity Result APIs
         (binding.activity as? FragmentActivity)?.let { fragmentActivity ->
             // Pass the FragmentActivity to the service to register the ActivityResultLauncher
-            // permissionService.registerActivityResultLauncher(fragmentActivity)
+            permissionService.registerActivityResultLauncher(fragmentActivity)
         }
     }
 
@@ -53,7 +60,7 @@ class CKHostApi() : ConnectKitHostApi {
         // Clear the Activity reference to prevent leaks when the Activity is destroyed
         this.activity = null
         // Tell the service to clean up any pending requests/references
-        // permissionService.removeActivityReferences()
+        permissionService.removeActivityReferences()
     }
 
     // --- Pigeon API Implementation ---
@@ -71,6 +78,82 @@ class CKHostApi() : ConnectKitHostApi {
         try {
             val platformVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
             callback(Result.success(platformVersion))
+        } catch (e: Exception) {
+            callback(Result.failure(e))
+        }
+    }
+
+    /// TODO: Add documentation
+    override fun isSdkAvailable(callback: (Result<String>) -> Unit) {
+        try {
+            val isSdkAvailable = permissionService.isSdkAvailable()
+            callback(Result.success(isSdkAvailable))
+        } catch (e: Exception) {
+            callback(Result.failure(e))
+        }
+    }
+
+    /// TODO: Add documentation
+    override fun requestPermissions(
+        readTypes: List<String>?,
+        writeTypes: List<String>?,
+        forHistory: Boolean?,
+        forBackground: Boolean?,
+        callback: (Result<Boolean>) -> Unit
+    ) {
+        scope.launch {
+            try {
+                val allPermissionsGranted =
+                    permissionService.requestPermissions(
+                        readTypes,
+                        writeTypes,
+                        forHistory,
+                        forBackground
+                    )
+                callback(Result.success(allPermissionsGranted))
+            } catch (e: Exception) {
+                callback(Result.failure(e))
+            }
+        }
+    }
+
+    /// TODO: Add documentation
+    override fun checkPermissions(
+        forData: Map<String, List<String>>?,
+        forHistory: Boolean?,
+        forBackground: Boolean?,
+        callback: (Result<AccessStatusMessage>) -> Unit
+    ) {
+        scope.launch {
+            try {
+                val permissionsGranted =
+                    permissionService.checkPermissions(forData, forHistory, forBackground)
+                callback(Result.success(permissionsGranted))
+            } catch (e: Exception) {
+                callback(Result.failure(e))
+            }
+        }
+    }
+
+    /// TODO: Add documentation
+    override fun revokePermissions(
+        callback: (Result<Boolean>) -> Unit
+    ) {
+        scope.launch {
+            try {
+                val isPermissionRevoked = permissionService.revokePermissions()
+                callback(Result.success(isPermissionRevoked))
+            } catch (e: Exception) {
+                callback(Result.failure(e))
+            }
+        }
+    }
+
+    /// TODO: add documentation
+    override fun openHealthSettings(callback: (Result<Boolean>) -> Unit) {
+        try {
+            val isHealthSettingsOpened = permissionService.openHealthSettings()
+            callback(Result.success(isHealthSettingsOpened))
         } catch (e: Exception) {
             callback(Result.failure(e))
         }

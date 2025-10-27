@@ -3,6 +3,7 @@ package dev.luix.connect_kit
 import androidx.annotation.NonNull
 import dev.luix.connect_kit.logging.CKLogger
 import dev.luix.connect_kit.pigeon.ConnectKitHostApi
+import dev.luix.connect_kit.services.PermissionService
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -48,11 +49,11 @@ class ConnectKitPlugin : FlutterPlugin, ActivityAware {
         // val flutterApi = ConnectKitFlutterApi(flutterPluginBinding.binaryMessenger)
 
         // Services
-        // val permissionService = PermissionService(flutterPluginBinding.applicationContext,
-        // pluginScope)
+        val permissionService =
+                PermissionService(flutterPluginBinding.applicationContext, pluginScope)
 
         // INFO: In the future we will be passing: permissionService, flutterApi, pluginScope
-        hostApi = CKHostApi()
+        hostApi = CKHostApi(permissionService, pluginScope)
 
         // BINDING: Set up the Pigeon communication channel.
         ConnectKitHostApi.setUp(flutterPluginBinding.binaryMessenger, hostApi)
