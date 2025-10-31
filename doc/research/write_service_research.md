@@ -55,7 +55,7 @@ healthStore.save(sample) { success, error in
 
 **Supported Record Types:**
 - All `Record` subclasses (Steps, HeartRate, Weight, Sleep, etc.)
-- Exercise sessions with associated data
+- Exercise sessions with records that happened during session
 - Nutrition records with detailed macros
 - Vital signs (blood pressure, temperature, glucose)
 
@@ -634,9 +634,9 @@ class CKWorkoutRecord extends CKRecord {
   /// Total energy burned
   final CKValue? totalEnergyBurned;
 
-  /// Associated data points recorded during workout
+  /// Data records recorded during workout session
   /// (heart rate samples, step intervals, etc.)
-  final List<CKDataRecord>? associatedData;
+  final List<CKDataRecord>? duringSession;
 
   const CKWorkoutRecord({
     super.id,
@@ -650,7 +650,7 @@ class CKWorkoutRecord extends CKRecord {
     this.title,
     this.totalDistance,
     this.totalEnergyBurned,
-    this.associatedData,
+    this.duringSession,
   });
 
   @override
@@ -667,8 +667,8 @@ class CKWorkoutRecord extends CKRecord {
     if (totalEnergyBurned != null) 'totalEnergyBurned': totalEnergyBurned!.toMap(),
     if (source != null) 'source': source!.toMap(),
     if (metadata != null) 'metadata': metadata,
-    if (associatedData != null)
-      'associatedData': associatedData!.map((r) => r.toMap()).toList(),
+    if (duringSession != null)
+      'duringSession': duringSession!.map((r) => r.toMap()).toList(),
   };
 }
 
@@ -699,7 +699,7 @@ enum CKWorkoutActivityType {
 /// **Single vs Batch:**
 /// Pass a list of one record or many. Batching is more efficient for:
 /// - Bulk imports
-/// - Workout sessions with associated data
+/// - Workout sessions with records that happened during session
 /// - Sync operations with multiple records
 ///
 /// **Update Behavior:**
@@ -755,30 +755,30 @@ enum CKWorkoutActivityType {
 /// // iOS: Always creates new records
 ///
 ///
-/// **Example - Workout with Associated Data:**
-///
-/// final workout = CKWorkoutRecord(
-///   activityType: CKWorkoutActivityType.running,
-///   startTime: start,
-///   endTime: end,
-///   totalDistance: CKValue.quantity(5.0, 'km'),
-///   totalEnergyBurned: CKValue.quantity(300, 'kcal'),
-///   source: CKSource.activelyRecorded(
-///     device: CKDevice.watch(),
-///   ),
-///   associatedData: [
-///     CKDataRecord.instantaneous(
-///       type: 'heartRate',
-///       value: CKValue.quantity(150, 'bpm'),
-///       time: midpoint,
-///       source: CKSource.activelyRecorded(
-///         device: CKDevice.watch(),
-///       ),
-///     ),
-///   ],
-/// );
-///
-/// final ids = await ConnectKit.instance.writeRecords([workout]);
+// **Example - Workout with Records that happened during session :**
+
+// final workout = CKWorkoutRecord(
+//   activityType: CKWorkoutActivityType.running,
+//   startTime: start,
+//   endTime: end,
+//   totalDistance: CKValue.quantity(5.0, 'km'),
+//   totalEnergyBurned: CKValue.quantity(300, 'kcal'),
+//   source: CKSource.activelyRecorded(
+//     device: CKDevice.watch(),
+//   ),
+//   duringSession: [
+//     CKDataRecord.instantaneous(
+//       type: 'heartRate',
+//       value: CKValue.quantity(150, 'bpm'),
+//       time: midpoint,
+//       source: CKSource.activelyRecorded(
+//         device: CKDevice.watch(),
+//       ),
+//     ),
+//   ],
+// );
+
+// final writeResult = await ConnectKit.instance.writeRecords([workout]);
 ///
 Future<List<String>> writeRecords(List<CKRecord> records) async {
   // Validate all records
@@ -978,7 +978,7 @@ class RecordDecoder {
             endZoneOffset = endOffset,
             metadata = metadata
         )
-        // Note: Associated data would be saved separately in Health Connect
+        // Note: duringSession data would be saved separately in Health Connect
     }
 
     private fun parseWorkoutActivityType(type: String): Int {

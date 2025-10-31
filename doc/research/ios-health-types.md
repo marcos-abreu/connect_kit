@@ -924,7 +924,7 @@ func requestBloodPressurePermissions(completion: @escaping (Bool, Error?) -> Voi
 // CORRECT: Food Permission Pattern
 func requestFoodPermissions(completion: @escaping (Bool, Error?) -> Void) {
     // Get nutrition component types
-    guard let caloriesType = HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed),
+    guard let energyType = HKQuantityType.quantityType(forIdentifier: .dietaryEnergyConsumed),
           let proteinType = HKQuantityType.quantityType(forIdentifier: .dietaryProtein),
           let carbsType = HKQuantityType.quantityType(forIdentifier: .dietaryCarbohydrates),
           let fatType = HKQuantityType.quantityType(forIdentifier: .dietaryFatTotal)
@@ -934,8 +934,8 @@ func requestFoodPermissions(completion: @escaping (Bool, Error?) -> Void) {
     }
 
     // Request permissions for nutrition types you'll use
-    let typesToShare: Set<HKSampleType> = [caloriesType, proteinType, carbsType, fatType]
-    let typesToRead: Set<HKObjectType> = [caloriesType, proteinType, carbsType, fatType]
+    let typesToShare: Set<HKSampleType> = [energyType, proteinType, carbsType, fatType]
+    let typesToRead: Set<HKObjectType> = [energyType, proteinType, carbsType, fatType]
 
     healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead, completion: completion)
 }
