@@ -5,7 +5,11 @@ import android.os.Build
 import androidx.fragment.app.FragmentActivity
 import dev.luix.connect_kit.pigeon.AccessStatusMessage
 import dev.luix.connect_kit.pigeon.ConnectKitHostApi
+import dev.luix.connect_kit.pigeon.WriteResultMessage
 import dev.luix.connect_kit.services.PermissionService
+import dev.luix.connect_kit.services.WriteService
+import dev.luix.connect_kit.logging.CKLogger
+import dev.luix.connect_kit.utils.CKConstants
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -20,9 +24,15 @@ import kotlinx.coroutines.launch
  * @constructor Creates a new CKHostApi instance
  */
 class CKHostApi(
+    private val scope: CoroutineScope,
     private val permissionService: PermissionService,
-    private val scope: CoroutineScope // Injected scope
+    private val writeService: WriteService
 ) : ConnectKitHostApi {
+
+    companion object {
+        // Tag for logging purposes
+        private const val TAG = CKConstants.TAG_WRITE_SERVICE
+    }
 
     // Reference to the currently attached Activity.
     // This reference is nullable to properly handle lifecycle events where the Activity
@@ -83,7 +93,20 @@ class CKHostApi(
         }
     }
 
-    /// TODO: Add documentation
+    /**
+     * Checks if Health Connect SDK is available on this device.
+     *
+     * This method queries the Health Connect SDK status and returns one of:
+     * - "available": SDK is installed and ready
+     * - "unavailable": SDK is not available on this device
+     * - "updateRequired": SDK is installed but needs an update
+     *
+     * **Usage:**
+     * Call this before requesting permissions or performing any health data operations.
+     * If unavailable or update required, guide users to install/update Health Connect.
+     *
+     * @param callback Returns SDK status string or error
+     */
     override fun isSdkAvailable(callback: (Result<String>) -> Unit) {
         try {
             val isSdkAvailable = permissionService.isSdkAvailable()
@@ -93,7 +116,24 @@ class CKHostApi(
         }
     }
 
-    /// TODO: Add documentation
+    /**
+     * Requests Health Connect permissions for specified data types.
+     *
+     * This method launches a permissions prompt allowing the user to grant access to
+     * read and/or write health data types, optionally including history and background permissions.
+     * The permission request uses the AndroidX Activity Result API to handle results safely across
+     * configuration changes.
+     *
+     * **Usage:**
+     * - Must be called when the app has an active Activity context.
+     * - Typically invoked before attempting to read or write any health records.
+     *
+     * @param readTypes A list of record types the app wants to read
+     * @param writeTypes A list of record types the app wants to write
+     * @param forHistory Whether to request permission for historical data access
+     * @param forBackground Whether to request permission for background data access
+     * @param callback Returns `true` if all requested permissions are granted, or an error otherwise
+     */
     override fun requestPermissions(
         readTypes: List<String>?,
         writeTypes: List<String>?,
@@ -117,7 +157,22 @@ class CKHostApi(
         }
     }
 
-    /// TODO: Add documentation
+    /**
+     * Checks the current Health Connect permission status.
+     *
+     * This method verifies which permissions are currently granted for reading and/or writing
+     * health data. It helps determine if a permission request is necessary before accessing data.
+     *
+     * **Usage:**
+     * - Call this before performing operations that require permission checks.
+     * - Can be used to update the UI to reflect the app’s permission state.
+     *
+     * @param forData A map containing requested read/write data types
+     * @param forHistory Whether to include historical data permissions in the check
+     * @param forBackground Whether to include background data permissions in the check
+     * @param callback Returns an [AccessStatusMessage] containing detailed access information,
+     * or an error if permission status cannot be determined
+     */
     override fun checkPermissions(
         forData: Map<String, List<String>>?,
         forHistory: Boolean?,
@@ -135,7 +190,18 @@ class CKHostApi(
         }
     }
 
-    /// TODO: Add documentation
+    /**
+     * Revokes all Health Connect permissions previously granted to the app.
+     *
+     * This method programmatically removes access to all health data types, effectively
+     * resetting the app’s authorization state. It is useful for sign-out or privacy-related flows.
+     *
+     * **Usage:**
+     * - Call this when the user explicitly chooses to revoke Health Connect access.
+     * - After revocation, all read/write operations will fail until permissions are re-requested.
+     *
+     * @param callback Returns `true` if permissions were successfully revoked, or an error otherwise
+     */
     override fun revokePermissions(
         callback: (Result<Boolean>) -> Unit
     ) {
@@ -149,13 +215,61 @@ class CKHostApi(
         }
     }
 
-    /// TODO: add documentation
+    /**
+     * Opens the Health Connect settings screen.
+     *
+     * This method launches the Health Connect system settings page, allowing the user
+     * to manually review or adjust app permissions. It is typically used when guiding users
+     * to fix denied permissions or manage access after setup.
+     *
+     * **Usage:**
+     * - Call this when the user wants to manage permissions manually.
+     * - Returns immediately with success if the settings activity was opened.
+     *
+     * @param callback Returns `true` if the Health Connect settings page was opened successfully,
+     * or an error otherwise
+     */
     override fun openHealthSettings(callback: (Result<Boolean>) -> Unit) {
         try {
             val isHealthSettingsOpened = permissionService.openHealthSettings()
             callback(Result.success(isHealthSettingsOpened))
         } catch (e: Exception) {
             callback(Result.failure(e))
+        }
+    }
+
+
+    /**
+     * Writes health records to the Health Connect database.
+     *
+     * This method encodes and writes one or more health records (e.g., workouts, nutrition,
+     * sleep sessions) to Health Connect. Each record must conform to a recognized schema
+     * supported by the connected platform.
+     *
+     * **Usage:**
+     * - Ensure all required permissions are granted before calling.
+     * - Use record mappers to build record maps that match expected input formats.
+     * - Returns a list of record IDs that were successfully written.
+     *
+     * @param records A list of record maps containing the data to write
+     * @param callback Returns WriteResultMessage or error
+     */
+    override fun writeRecords(
+        records: List<Map<String, Any?>>,
+        callback: (Result<WriteResultMessage>) -> Unit
+    ) {
+        scope.launch {
+            try {
+                val result = writeService.writeRecords(records)
+                callback(Result.success(result))
+            } catch (error: Exception) {
+                CKLogger.e(
+                    tag = TAG,
+                    message = "Write records failed: ${error.message}",
+                    error = error
+                )
+                callback(Result.failure(error))
+            }
         }
     }
 }

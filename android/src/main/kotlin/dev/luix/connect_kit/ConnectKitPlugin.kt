@@ -1,9 +1,12 @@
 package dev.luix.connect_kit
 
 import androidx.annotation.NonNull
+import androidx.health.connect.client.HealthConnectClient
 import dev.luix.connect_kit.logging.CKLogger
 import dev.luix.connect_kit.pigeon.ConnectKitHostApi
+import dev.luix.connect_kit.mapper.RecordMapper
 import dev.luix.connect_kit.services.PermissionService
+import dev.luix.connect_kit.services.WriteService
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -42,18 +45,37 @@ class ConnectKitPlugin : FlutterPlugin, ActivityAware {
      * @param flutterPluginBinding Provides the binding to the Flutter engine
      */
     override fun onAttachedToEngine(
-            @NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
+        @NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     ) {
         CKLogger.i(TAG, "onAttachedToEngine: Setting up CKHostApi")
+
         // DEPENDENCY INJECTION: Instantiate services here (The Composition Root).
-        // val flutterApi = ConnectKitFlutterApi(flutterPluginBinding.binaryMessenger)
+
+        // Health Connect Client
+        val healthConnectClient = HealthConnectClient.getOrCreate(
+            flutterPluginBinding.applicationContext
+        )
+
+        // Encoder/Decoder Mapper
+        val recordMapper = RecordMapper(healthConnectClient)
 
         // Services
-        val permissionService =
-                PermissionService(flutterPluginBinding.applicationContext, pluginScope)
+        val permissionService = PermissionService(
+            flutterPluginBinding.applicationContext,
+            pluginScope,
+            healthConnectClient
+        )
+        val writeService = WriteService(
+            recordMapper,
+            healthConnectClient
+        )
 
-        // INFO: In the future we will be passing: permissionService, flutterApi, pluginScope
-        hostApi = CKHostApi(permissionService, pluginScope)
+
+        hostApi = CKHostApi(
+            pluginScope,
+            permissionService,
+            writeService
+        )
 
         // BINDING: Set up the Pigeon communication channel.
         ConnectKitHostApi.setUp(flutterPluginBinding.binaryMessenger, hostApi)
@@ -73,7 +95,7 @@ class ConnectKitPlugin : FlutterPlugin, ActivityAware {
         CKLogger.i(TAG, "onAttachedToActivity: ...")
         // ATTACH ACTIVITY: Store the reference and perform setup requiring the Activity.
         hostApi?.onAttachedToActivity(binding)
-                ?: CKLogger.w(TAG, "onAttachedToActivity called but hostApi is null")
+            ?: CKLogger.w(TAG, "onAttachedToActivity called but hostApi is null")
     }
 
     /**
@@ -88,10 +110,10 @@ class ConnectKitPlugin : FlutterPlugin, ActivityAware {
         CKLogger.i(TAG, "onDetachedFromActivityForConfigChanges: ...")
         // CONFIGURATION CHANGE: Clean up transient Activity references (e.g., screen rotation)
         hostApi?.onDetachedFromActivity()
-                ?: CKLogger.w(
-                        TAG,
-                        "onDetachedFromActivityForConfigChanges called but hostApi is null"
-                )
+            ?: CKLogger.w(
+                TAG,
+                "onDetachedFromActivityForConfigChanges called but hostApi is null"
+            )
     }
 
     /**
@@ -106,10 +128,10 @@ class ConnectKitPlugin : FlutterPlugin, ActivityAware {
         CKLogger.i(TAG, "onReattachedToActivityForConfigChanges: ...")
         // RE-ATTACH: Re-establish the Activity reference and re-register listeners/launchers.
         hostApi?.onAttachedToActivity(binding)
-                ?: CKLogger.w(
-                        TAG,
-                        "onReattachedToActivityForConfigChanges called but hostApi is null"
-                )
+            ?: CKLogger.w(
+                TAG,
+                "onReattachedToActivityForConfigChanges called but hostApi is null"
+            )
     }
 
     /**
@@ -122,7 +144,7 @@ class ConnectKitPlugin : FlutterPlugin, ActivityAware {
         CKLogger.i(TAG, "onDetachedFromActivity: ...")
         // DETACH ACTIVITY: Final cleanup of the Activity reference.
         hostApi?.onDetachedFromActivity()
-                ?: CKLogger.w(TAG, "onDetachedFromActivity called but hostApi is null")
+            ?: CKLogger.w(TAG, "onDetachedFromActivity called but hostApi is null")
     }
 
     // --- Plugin Detachment ---

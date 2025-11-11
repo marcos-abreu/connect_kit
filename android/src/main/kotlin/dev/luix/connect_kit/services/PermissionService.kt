@@ -14,8 +14,8 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.*
 import dev.luix.connect_kit.logging.CKLogger
 import dev.luix.connect_kit.pigeon.AccessStatusMessage
+import dev.luix.connect_kit.mapper.RecordTypeMapper
 import dev.luix.connect_kit.utils.CKConstants
-import dev.luix.connect_kit.utils.RecordTypeMapper
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellableContinuation
@@ -27,7 +27,11 @@ import kotlinx.coroutines.suspendCancellableCoroutine
  * Service for managing Health Connect permissions and availability on Android Handles
  * production-ready permission request flows with Activity integration and coroutine support
  */
-class PermissionService(private val context: Context, private val scope: CoroutineScope) {
+class PermissionService(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    private val healthConnectClient: HealthConnectClient
+) {
 
     companion object {
         private const val TAG = CKConstants.TAG_PERMISSION_SERVICE
@@ -41,10 +45,6 @@ class PermissionService(private val context: Context, private val scope: Corouti
 
     // The specific set of permissions requested, needed for verification after the UI closes
     private var lastRequestedPermissions: Set<String>? = null
-
-    private val healthConnectClient: HealthConnectClient by lazy {
-        HealthConnectClient.getOrCreate(context)
-    }
 
     // --- Lifecycle Management (Called by ConnectKitHostApiImpl) ---
 
@@ -60,17 +60,18 @@ class PermissionService(private val context: Context, private val scope: Corouti
             ) { grantedPermissions: Set<String> ->
                 // This is the synchronous callback on the Main Thread
 
+                // Store locally before clearing
                 val pending = pendingPermissionRequest
                 val requested = lastRequestedPermissions
 
-                // Immediately clear the state before processing
+                // Immediately clear the state before processing (prevent leaks)
                 pendingPermissionRequest = null
                 lastRequestedPermissions = null
 
                 if (pending == null || requested == null) {
                     CKLogger.w(
                         tag = TAG,
-                        message = "Permission result received but no pending request"
+                        message = "Permission result received but no pending request was active"
                     )
                     return@registerForActivityResult
                 }
@@ -382,7 +383,7 @@ class PermissionService(private val context: Context, private val scope: Corouti
      */
     fun openHealthSettings(): Boolean {
         // Try Method 1: Android 14+ - Direct to app's Health Connect permissions
-        // INFO: Although this intent is part of public SDK, lauching it requires
+        // NOTE: Although this intent is part of public SDK, lauching it requires
         //       privileged system-only `GRANT_RUNTIME_PERMISSIONS, currently only
         //       privileged OEM apps or system-signed apps, not 3rd party apps (yet).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
