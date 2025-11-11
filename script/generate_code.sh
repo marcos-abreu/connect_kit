@@ -33,14 +33,39 @@ else
     exit 1
 fi
 
-echo "🎉 Code generation completed successfully."
-
 echo ""
 
 dart run tool/generate_ck_type.dart
 if [ $? -eq 0 ]; then
-    echo "✅ CKTypes code generation completed successfully."
+    echo "✅ CKType code generation completed successfully."
 else
-    echo "❌ CKTypes code generation failed."
+    echo "❌ CKType code generation failed."
     exit 1
 fi
+
+echo ""
+
+
+dart run tool/generate_ck_unit.dart
+if [ $? -eq 0 ]; then
+    echo "✅ CKUnit variations code generation completed successfully."
+else
+    echo "❌ CKUnit variations code generation failed."
+    exit 1
+fi
+
+echo ""
+
+
+dart run tool/generate_ck_record_builder.dart
+if [ $? -eq 0 ]; then
+    echo "✅ CKRecordBuilder code generation completed successfully."
+else
+    echo "❌ CKRecordBuilder code generation failed."
+    exit 1
+fi
+
+echo ""
+echo ""
+
+echo "🎉 Code generation completed successfully."
