@@ -1,7 +1,7 @@
 import 'package:connect_kit/src/pigeon/connect_kit_messages.g.dart';
 import 'package:connect_kit/src/utils/operation_guard.dart';
-import 'package:connect_kit/src/utils/mapper/request_mappers.dart';
-import 'package:connect_kit/src/utils/mapper/response_mappers.dart';
+import 'package:connect_kit/src/mapper/request_mappers.dart';
+import 'package:connect_kit/src/mapper/response_mappers.dart';
 
 import 'package:connect_kit/src/models/schema/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
@@ -11,6 +11,9 @@ import 'package:connect_kit/src/models/ck_access_status.dart';
 /// TODO: add proper documentation
 ///  Service for handling SDK availability and permission management
 class PermissionService {
+  /// Static log TAG
+  static const String logTag = 'PermissionService';
+
   final ConnectKitHostApi _hostApi;
 
   /// TODO: Add documentation
@@ -88,7 +91,7 @@ class PermissionService {
 
         // parse response
         return CKAccessStatus.fromMessage(
-          // INFO: required normalization to extract inner object of `Map<String?, Object?>``
+          // NOTE: required normalization to extract inner object of `Map<String?, Object?>``
           response.dataAccess.normalizeAsDataAccess(),
           historyAccessString: response.historyAccess,
           backgroundAccessString: response.backgroundAccess,

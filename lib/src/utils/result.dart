@@ -13,7 +13,7 @@ import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 /// else print(result.error);
 /// ```
 class Result<T> {
-  /// Use static const and SCREAMING_SNAKE_CASE
+  /// Static log TAG
   static const String logTag = 'Result';
 
   /// The successful data payload. Only non-null if [isSuccess] is true

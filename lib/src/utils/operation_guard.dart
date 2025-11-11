@@ -11,8 +11,8 @@ import 'package:connect_kit/src/utils/connect_kit_exception.dart';
 /// always return a [Result] object, converting any thrown exceptions
 /// into a [ConnectKitException] within the failure Result
 class OperationGuard {
-  /// Use static const and SCREAMING_SNAKE_CASE
-  static const String logTag = 'Result';
+  /// Static log TAG
+  static const String logTag = 'OperationGuard';
 
   /// Execute a synchronous operation, wrapping the outcome in a [Result]
   static Result<T> execute<T>(
@@ -21,7 +21,7 @@ class OperationGuard {
     Map<String, dynamic>? parameters,
   }) {
     final stopwatch = Stopwatch()..start();
-    T? result; // INFO: keeping as nullable to use in the catch block when logs are implemented
+    T? result; // NOTE: keeping as nullable to use in the catch block when logs are implemented
     try {
       result = operation();
 
