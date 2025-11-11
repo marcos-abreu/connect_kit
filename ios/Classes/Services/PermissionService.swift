@@ -154,7 +154,7 @@ class PermissionService {
                     let status = healthStore.authorizationStatus(for: readType)
                     accessTypeMap[CKConstants.ACCESS_TYPE_READ] = statusToString(status)
                 } else {
-                    // INFO: getObjectType already logged why it failed
+                    // NOTE: getObjectType already logged why it failed
                     // Type doesn't exist, OS version too old, or other technical reason
                     accessTypeMap[CKConstants.ACCESS_TYPE_READ] =
                         CKConstants.PERMISSION_STATUS_UNSUPPORTED
@@ -173,7 +173,7 @@ class PermissionService {
                     let status = healthStore.authorizationStatus(for: sampleType)
                     accessTypeMap[CKConstants.ACCESS_TYPE_WRITE] = statusToString(status)
                 } else {
-                    // INFO: getObjectType already logged why it failed (read-only, correlation, etc.)
+                    // NOTE: getObjectType already logged why it failed (read-only, correlation, etc.)
                     // Type is read-only, correlation, doesn't exist, or OS too old
                     accessTypeMap[CKConstants.ACCESS_TYPE_WRITE] =
                         CKConstants.PERMISSION_STATUS_UNSUPPORTED

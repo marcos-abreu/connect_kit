@@ -92,10 +92,10 @@ public enum RecordTypeMapper {
         "steps": ({ HKObjectType.quantityType(forIdentifier: .stepCount) }, 8.0),
         "distance": ({ HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning) }, 8.0),
         "floorsClimbed": ({ HKObjectType.quantityType(forIdentifier: .flightsClimbed) }, 8.0),
-        "restingCalories": ({ HKObjectType.quantityType(forIdentifier: .basalEnergyBurned) }, 8.0),
+        "restingEnergy": ({ HKObjectType.quantityType(forIdentifier: .basalEnergyBurned) }, 8.0),
 
         // "nutrition": ({ HKObjectType.correlationType(forIdentifier: .food) }, 8.0),
-        "nutrition.calories": (
+        "nutrition.energy": (
             { HKObjectType.quantityType(forIdentifier: .dietaryEnergyConsumed) }, 8.0
         ),
         "nutrition.protein": ({ HKObjectType.quantityType(forIdentifier: .dietaryProtein) }, 8.0),
@@ -112,7 +112,7 @@ public enum RecordTypeMapper {
             { HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning) }, 8.0
         ),
         "workout.heartRate": ({ HKObjectType.quantityType(forIdentifier: .heartRate) }, 8.0),
-        "workout.calories": (
+        "workout.energy": (
             { HKObjectType.quantityType(forIdentifier: .activeEnergyBurned) }, 8.0
         ),
 
