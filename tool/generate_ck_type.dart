@@ -16,8 +16,13 @@ void main() {
   final content = file.readAsStringSync();
   final types = <String, String>{};
 
-  // Extract simple types: static const name = CKType._('name');
-  final simpleTypeRegex = RegExp(r"static const (\w+) = CKType\._\('(\w+)'\);");
+  // Extract simple types: static const name = CKType._('name', ...);
+  // Handles single-line, multi-line, and formatted constructors
+  // Captures the first argument (type name) only
+  final simpleTypeRegex = RegExp(
+    r"static const (\w+) =\s+CKType\._\s*\([^']*'([^']*)'",
+    multiLine: true,
+  );
   for (final match in simpleTypeRegex.allMatches(content)) {
     final name = match.group(1)!;
     final identifier = match.group(2)!;
@@ -25,15 +30,21 @@ void main() {
   }
 
   // Extract composite types: static const name = _NameType._();
-  final compositeTypeRegex = RegExp(r"static const (\w+) = _(\w+)Type\._\(\);");
+  final compositeTypeRegex = RegExp(
+    r"static const (\w+) =\s+_(\w+)Type\._\s*\(\);",
+    multiLine: true,
+  );
   for (final match in compositeTypeRegex.allMatches(content)) {
     final name = match.group(1)!;
     types[name] = 'CKType.$name';
   }
 
-  // Extract composite sub-types: CKType get subname => CKType._('parent.subname');
-  final subTypeRegex =
-      RegExp(r"CKType get (\w+) => (?:const )?CKType\._\('([\w.]+)'\);");
+  // Extract composite sub-types: CKType get subname => CKType._('parent.subname', ...);
+  // Handles additional parameters after the type name
+  final subTypeRegex = RegExp(
+    r"CKType get (\w+) =>[^;]*CKType\._\s*\(\s*'([\w.]+)'[^)]*\)",
+    multiLine: true,
+  );
   for (final match in subTypeRegex.allMatches(content)) {
     final getterName = match.group(1)!;
     final fullPath = match.group(2)!; // e.g., "workout.distance"
