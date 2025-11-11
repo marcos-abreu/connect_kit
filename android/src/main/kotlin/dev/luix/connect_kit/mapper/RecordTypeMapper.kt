@@ -1,10 +1,11 @@
-package dev.luix.connect_kit.utils
+package dev.luix.connect_kit.mapper
 
 import android.os.Build
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.records.*
 import dev.luix.connect_kit.logging.CKLogger
+import dev.luix.connect_kit.utils.CKConstants
 import kotlin.reflect.KClass
 
 /**
@@ -14,7 +15,7 @@ import kotlin.reflect.KClass
  * Handles SDK version checking and Health Connect feature availability.
  */
 object RecordTypeMapper {
-    private const val TAG = "RecordTypeMapper"
+    private const val TAG = CKConstants.TAG_RECORD_TYPE_MAPPER
 
     /**
      * Metadata about a Health Connect record type including version and feature requirements
@@ -28,59 +29,135 @@ object RecordTypeMapper {
     // Map of Dart identifiers to Health Connect Record classes with metadata
     private val RECORD_TYPE_MAP: Map<String, RecordMapping> = mapOf(
         // --- Activity & Fitness ---
+        "activeEnergy" to RecordMapping(ActiveCaloriesBurnedRecord::class),
+        "restingEnergy" to RecordMapping(BasalMetabolicRateRecord::class),
+        "totalEnergy" to RecordMapping(TotalCaloriesBurnedRecord::class),
+        "speed" to RecordMapping(SpeedRecord::class),
         "steps" to RecordMapping(StepsRecord::class),
         "distance" to RecordMapping(DistanceRecord::class),
-        "activeCalories" to RecordMapping(ActiveCaloriesBurnedRecord::class),
-        "totalCalories" to RecordMapping(TotalCaloriesBurnedRecord::class),
-        "restingCalories" to RecordMapping(BasalMetabolicRateRecord::class),
         "floorsClimbed" to RecordMapping(FloorsClimbedRecord::class),
-
-        // --- Vitals ---
-        "heartRate" to RecordMapping(HeartRateRecord::class),
-        "restingHeartRate" to RecordMapping(RestingHeartRateRecord::class),
-        "bodyTemperature" to RecordMapping(BodyTemperatureRecord::class),
-        "skinTemperature" to RecordMapping(
-            SkinTemperatureRecord::class,
-            requiredFeature = HealthConnectFeatures.FEATURE_SKIN_TEMPERATURE
+        "elevation" to RecordMapping(ElevationGainedRecord::class),
+        "power" to RecordMapping(PowerRecord::class),
+        "runningPower" to RecordMapping(PowerRecord::class),
+        "cyclingPower" to RecordMapping(PowerRecord::class),
+        "cyclingPedalingCadence" to RecordMapping(CyclingPedalingCadenceRecord::class),
+        "wheelchairPushes" to RecordMapping(WheelchairPushesRecord::class),
+        "activityIntensity" to RecordMapping(
+            ActivityIntensityRecord::class,
+            requiredFeature = HealthConnectFeatures.FEATURE_ACTIVITY_INTENSITY
         ),
-        "respiratoryRate" to RecordMapping(RespiratoryRateRecord::class),
-        "oxygenSaturation" to RecordMapping(OxygenSaturationRecord::class),
-        "bloodGlucose" to RecordMapping(BloodGlucoseRecord::class),
+        // "exerciseTime" to RecordMapping(ExerciseSessionRecord::class),
+        // --- Workouts ---
+        "workout" to RecordMapping(ExerciseSessionRecord::class),
+        "workout.energy" to RecordMapping(ActiveCaloriesBurnedRecord::class),
+        "workout.distance" to RecordMapping(DistanceRecord::class),
+        "workout.heartRate" to RecordMapping(HeartRateRecord::class),
+        "workout.speed" to RecordMapping(SpeedRecord::class),
+        "workout.power" to RecordMapping(PowerRecord::class),
+
 
         // --- Body Measurements ---
         "height" to RecordMapping(HeightRecord::class),
         "weight" to RecordMapping(WeightRecord::class),
         "bodyFat" to RecordMapping(BodyFatRecord::class),
         "leanBodyMass" to RecordMapping(LeanBodyMassRecord::class),
+        "boneMass" to RecordMapping(BoneMassRecord::class),
+        "bodyWaterMass" to RecordMapping(BodyWaterMassRecord::class),
+
+        // --- Characteristics ---
+
+        // --- Reproductive Health (Cycle Tracking) ---
+        "menstrualFlow" to RecordMapping(MenstruationFlowRecord::class),
+        "cervicalMucus" to RecordMapping(CervicalMucusRecord::class),
+        "ovulationTest" to RecordMapping(OvulationTestRecord::class),
+        "sexualActivity" to RecordMapping(SexualActivityRecord::class),
+        "intermenstrualBleeding" to RecordMapping(
+            IntermenstrualBleedingRecord::class,
+        ),
+        "menstruationPeriod" to RecordMapping(
+            MenstruationPeriodRecord::class
+        ),
+        "basalBodyTemperature" to RecordMapping(
+            BasalBodyTemperatureRecord::class
+        ),
+
+        // --- Vitals ---
+        "heartRate" to RecordMapping(HeartRateRecord::class),
+        "restingHeartRate" to RecordMapping(RestingHeartRateRecord::class),
+        "bloodGlucose" to RecordMapping(BloodGlucoseRecord::class),
+        "bodyTemperature" to RecordMapping(BodyTemperatureRecord::class),
+        "skinTemperature" to RecordMapping(
+            SkinTemperatureRecord::class,
+            requiredFeature = HealthConnectFeatures.FEATURE_SKIN_TEMPERATURE
+        ),
+        "oxygenSaturation" to RecordMapping(OxygenSaturationRecord::class),
+        "respiratoryRate" to RecordMapping(RespiratoryRateRecord::class),
+        "vo2Max" to RecordMapping(Vo2MaxRecord::class),
 
         // --- Blood Pressure ---
+        "bloodPressure" to RecordMapping(BloodPressureRecord::class),
         "bloodPressure.systolic" to RecordMapping(BloodPressureRecord::class),
         "bloodPressure.diastolic" to RecordMapping(BloodPressureRecord::class),
 
-        // --- Nutrition ---
-        "nutrition.calories" to RecordMapping(NutritionRecord::class),
-        "nutrition.protein" to RecordMapping(NutritionRecord::class),
-        "nutrition.carbs" to RecordMapping(NutritionRecord::class),
-        "nutrition.fat" to RecordMapping(NutritionRecord::class),
 
         // --- Hydration ---
         "waterIntake" to RecordMapping(HydrationRecord::class),
+        // --- Nutrition ---
+        "nutrition.energy" to RecordMapping(NutritionRecord::class),
+        "nutrition.energy" to RecordMapping(NutritionRecord::class),
+        "nutrition.protein" to RecordMapping(NutritionRecord::class),
+        "nutrition.carbs" to RecordMapping(NutritionRecord::class),
+        "nutrition.fat" to RecordMapping(NutritionRecord::class),
+        "nutrition.fiber" to RecordMapping(NutritionRecord::class),
+        "nutrition.sugar" to RecordMapping(NutritionRecord::class),
+        "nutrition.saturatedFat" to RecordMapping(NutritionRecord::class),
+        "nutrition.unsaturatedFat" to RecordMapping(NutritionRecord::class),
+        "nutrition.monounsaturatedFat" to RecordMapping(NutritionRecord::class),
+        "nutrition.polyunsaturatedFat" to RecordMapping(NutritionRecord::class),
+        "nutrition.transFat" to RecordMapping(NutritionRecord::class),
+        "nutrition.cholesterol" to RecordMapping(NutritionRecord::class),
+        "nutrition.calcium" to RecordMapping(NutritionRecord::class),
+        "nutrition.chloride" to RecordMapping(NutritionRecord::class),
+        "nutrition.chromium" to RecordMapping(NutritionRecord::class),
+        "nutrition.copper" to RecordMapping(NutritionRecord::class),
+        "nutrition.iodine" to RecordMapping(NutritionRecord::class),
+        "nutrition.iron" to RecordMapping(NutritionRecord::class),
+        "nutrition.magnesium" to RecordMapping(NutritionRecord::class),
+        "nutrition.manganese" to RecordMapping(NutritionRecord::class),
+        "nutrition.molybdenum" to RecordMapping(NutritionRecord::class),
+        "nutrition.phosphorus" to RecordMapping(NutritionRecord::class),
+        "nutrition.potassium" to RecordMapping(NutritionRecord::class),
+        "nutrition.selenium" to RecordMapping(NutritionRecord::class),
+        "nutrition.sodium" to RecordMapping(NutritionRecord::class),
+        "nutrition.zinc" to RecordMapping(NutritionRecord::class),
+        "nutrition.vitaminA" to RecordMapping(NutritionRecord::class),
+        "nutrition.vitaminB6" to RecordMapping(NutritionRecord::class),
+        "nutrition.vitaminB12" to RecordMapping(NutritionRecord::class),
+        "nutrition.vitaminC" to RecordMapping(NutritionRecord::class),
+        "nutrition.vitaminD" to RecordMapping(NutritionRecord::class),
+        "nutrition.vitaminE" to RecordMapping(NutritionRecord::class),
+        "nutrition.vitaminK" to RecordMapping(NutritionRecord::class),
+        "nutrition.thiamin" to RecordMapping(NutritionRecord::class),
+        "nutrition.riboflavin" to RecordMapping(NutritionRecord::class),
+        "nutrition.niacin" to RecordMapping(NutritionRecord::class),
+        "nutrition.folate" to RecordMapping(NutritionRecord::class),
+        "nutrition.biotin" to RecordMapping(NutritionRecord::class),
+        "nutrition.pantothenicAcid" to RecordMapping(NutritionRecord::class),
 
         // --- Sleep & Wellness ---
-        "sleepAnalysis" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession.inBed" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession.asleep" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession.awake" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession.light" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession.deep" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession.rem" to RecordMapping(SleepSessionRecord::class),
+        "sleepSession.outOfBed" to RecordMapping(SleepSessionRecord::class),
+
         "mindfulSession" to RecordMapping(
             MindfulnessSessionRecord::class,
             requiredFeature = HealthConnectFeatures.FEATURE_MINDFULNESS_SESSION
         ),
-
-        // --- Reproductive Health ---
-        "menstrualFlow" to RecordMapping(MenstruationFlowRecord::class),
-
-        // --- Workouts ---
-        "workout" to RecordMapping(ExerciseSessionRecord::class),
-        "workout.distance" to RecordMapping(DistanceRecord::class),
-        "workout.heartRate" to RecordMapping(HeartRateRecord::class),
-        "workout.calories" to RecordMapping(ActiveCaloriesBurnedRecord::class),
     )
 
     /**
