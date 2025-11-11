@@ -7,10 +7,13 @@ import 'package:flutter/foundation.dart'; // Required for @visibleForTesting
 import 'package:connect_kit/src/pigeon/connect_kit_messages.g.dart';
 import 'package:connect_kit/src/services/operations_service.dart';
 import 'package:connect_kit/src/services/permission_service.dart';
+import 'package:connect_kit/src/services/write_service.dart';
 import 'package:connect_kit/src/models/schema/ck_type.dart';
+import 'package:connect_kit/src/models/records/ck_record.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
 import 'package:connect_kit/src/models/ck_access_status.dart';
 import 'package:connect_kit/src/models/ck_sdk_status.dart';
+import 'package:connect_kit/src/models/ck_write_result.dart';
 
 // Exports for public models/enums - keeping the public interface clean
 export 'package:connect_kit/src/models/models.dart';
@@ -30,13 +33,18 @@ class ConnectKit {
     ConnectKitHostApi? hostApi,
     OperationsService? operationsService,
     PermissionService? permissionService,
+    WriteService? writeService,
   }) {
     _initialize(
       injectedHostApi: hostApi,
       injectedOperationsService: operationsService,
       injectedPermissionService: permissionService,
+      injectedWriteService: writeService,
     ); // Initialize immediately on construction
   }
+
+  /// Static log TAG
+  static const String logTag = 'ConnectKit';
 
   /// Private constructor to enforce the singleton pattern
   ConnectKit._internal() {
@@ -51,6 +59,7 @@ class ConnectKit {
   late final ConnectKitHostApi _hostApi;
   late final OperationsService _operationsService;
   late final PermissionService _permissionService;
+  late final WriteService _writeService;
 
   /// The getter returns as single instance of the [ConnectKit] plugin
   static ConnectKit get instance => _instance;
@@ -62,6 +71,7 @@ class ConnectKit {
     ConnectKitHostApi? injectedHostApi,
     OperationsService? injectedOperationsService,
     PermissionService? injectedPermissionService,
+    WriteService? injectedWriteService,
   }) {
     if (_initialized) return;
     _initialized = true;
@@ -71,6 +81,7 @@ class ConnectKit {
         injectedOperationsService ?? OperationsService(_hostApi);
     _permissionService =
         injectedPermissionService ?? PermissionService(_hostApi);
+    _writeService = injectedWriteService ?? WriteService(_hostApi);
   }
 
   // --- Public API ---
@@ -214,6 +225,38 @@ class ConnectKit {
   /// screen, or `false` if the operation failed.
   Future<bool> openHealthSettings() async {
     return await _permissionService.openHealthSettings();
+  }
+
+  /// Writes one or more health records to the native health platform.
+  ///
+  /// **Platforms:**
+  /// - iOS: Writes to HealthKit as HKSample instances
+  /// - Android: Writes to Health Connect as Record instances
+  ///
+  /// **Single vs Batch:**
+  /// Pass a list of one record or many. Batching is more efficient for:
+  /// - Bulk imports
+  /// - Workout sessions with records that happened during session
+  /// - Sync operations with multiple records
+  ///
+  /// **Update Behavior:**
+  /// - **Android:** Supports upsert via `source.clientRecordId`
+  ///   - If record exists with same ID and higher version: UPDATES
+  ///   - If record doesn't exist: CREATES NEW
+  /// - **iOS:** No upsert support (samples are immutable)
+  ///   - Always creates NEW record
+  ///   - To "update": Query old sample → Delete → Save new
+  ///
+  /// **Returns:** List of platform-assigned IDs (UUIDs on iOS, IDs on Android)
+  ///
+  /// **Throws:**
+  /// - `PermissionDeniedException`: No write permission for data type(s)
+  /// - `UnsupportedTypeException`: Data type not supported on platform/OS version
+  /// - `ValidationException`: Record data invalid
+  /// - `PlatformException`: Native platform error
+  ///
+  Future<CKWriteResult> writeRecords(List<CKRecord> records) async {
+    return await _writeService.writeRecords(records);
   }
 
   // Future public methods will be added here, delegating to other services or clients
