@@ -1,8 +1,8 @@
-// test/unit/src/utils/mapper/request_mappers_test.dart
+// test/unit/src/mapper/request_mappers_test.dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:connect_kit/src/models/schema/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
-import 'package:connect_kit/src/utils/mapper/request_mappers.dart';
+import 'package:connect_kit/src/mapper/request_mappers.dart';
 
 void main() {
   group('CKTypeMapping extension', () {
@@ -24,7 +24,7 @@ void main() {
       });
 
       test('keeps component types unchanged', () {
-        final input = {CKType.nutrition.calories, CKType.nutrition.protein};
+        final input = {CKType.nutrition.energy, CKType.nutrition.protein};
         final result = input.expandCompositeTypes();
 
         expect(result, equals(input));
@@ -34,7 +34,7 @@ void main() {
         final input = {CKType.nutrition};
         final result = input.expandCompositeTypes();
 
-        expect(result, contains(CKType.nutrition.calories));
+        expect(result, contains(CKType.nutrition.energy));
         expect(result, contains(CKType.nutrition.protein));
         expect(result, contains(CKType.nutrition.carbs));
         expect(result, contains(CKType.nutrition.fat));
@@ -99,10 +99,10 @@ void main() {
       });
 
       test('handles composite component types', () {
-        final input = {CKType.nutrition.calories, CKType.nutrition.protein};
+        final input = {CKType.nutrition.energy, CKType.nutrition.protein};
         final result = input.mapToRequest();
 
-        expect(result, contains('nutrition.calories'));
+        expect(result, contains('nutrition.energy'));
         expect(result, contains('nutrition.protein'));
       });
 
@@ -166,12 +166,12 @@ void main() {
 
       test('handles component types correctly', () {
         final input = {
-          CKType.nutrition.calories: {CKAccessType.read},
+          CKType.nutrition.energy: {CKAccessType.read},
           CKType.nutrition.protein: {CKAccessType.write},
         };
         final result = input.mapToRequest();
 
-        expect(result['nutrition.calories'], equals(['read']));
+        expect(result['nutrition.energy'], equals(['read']));
         expect(result['nutrition.protein'], equals(['write']));
       });
 
@@ -212,7 +212,7 @@ void main() {
         final result = input.mapToRequest();
 
         // All nutrition components should have same access types
-        expect(result['nutrition.calories'], containsAll(['read', 'write']));
+        expect(result['nutrition.energy'], containsAll(['read', 'write']));
         expect(result['nutrition.protein'], containsAll(['read', 'write']));
         expect(result['nutrition.carbs'], containsAll(['read', 'write']));
         expect(result['nutrition.fat'], containsAll(['read', 'write']));

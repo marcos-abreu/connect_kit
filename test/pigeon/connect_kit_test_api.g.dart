@@ -21,6 +21,9 @@ class _PigeonCodec extends StandardMessageCodec {
     }    else if (value is AccessStatusMessage) {
       buffer.putUint8(129);
       writeValue(buffer, value.encode());
+    }    else if (value is WriteResultMessage) {
+      buffer.putUint8(130);
+      writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
     }
@@ -31,6 +34,8 @@ class _PigeonCodec extends StandardMessageCodec {
     switch (type) {
       case 129: 
         return AccessStatusMessage.decode(readValue(buffer)!);
+      case 130: 
+        return WriteResultMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }

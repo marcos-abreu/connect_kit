@@ -1,6 +1,6 @@
-// test/unit/src/utils/mapper/response_mappers_test.dart
+// test/unit/src/mapper/response_mappers_test.dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:connect_kit/src/utils/mapper/response_mappers.dart';
+import 'package:connect_kit/src/mapper/response_mappers.dart';
 
 void main() {
   group('RawPigeonResponseMapping extension', () {

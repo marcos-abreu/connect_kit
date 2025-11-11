@@ -13,7 +13,7 @@ void main() {
 
       test('displayName converts camelCase to Title Case', () {
         expect(CKType.steps.displayName, 'Steps');
-        expect(CKType.basalMetabolicRate.displayName, 'Basal Metabolic Rate');
+        expect(CKType.restingEnergy.displayName, 'Resting Energy');
         expect(CKType.bodyMassIndex.displayName, 'Body Mass Index');
       });
 
@@ -64,7 +64,7 @@ void main() {
         test('has correct components', () {
           expect(CKType.nutrition.defaultComponents.length, 4);
           expect(CKType.nutrition.defaultComponents,
-              contains(CKType.nutrition.calories));
+              contains(CKType.nutrition.energy));
           expect(CKType.nutrition.defaultComponents,
               contains(CKType.nutrition.protein));
           expect(CKType.nutrition.defaultComponents,
@@ -74,7 +74,7 @@ void main() {
         });
 
         test('component types have correct names', () {
-          expect(CKType.nutrition.calories.toString(), 'nutrition.calories');
+          expect(CKType.nutrition.energy.toString(), 'nutrition.energy');
           expect(CKType.nutrition.protein.toString(), 'nutrition.protein');
           expect(CKType.nutrition.carbs.toString(), 'nutrition.carbs');
           expect(CKType.nutrition.fat.toString(), 'nutrition.fat');
@@ -93,7 +93,7 @@ void main() {
         test('component types have correct names', () {
           expect(CKType.workout.distance.toString(), 'workout.distance');
           expect(CKType.workout.heartRate.toString(), 'workout.heartRate');
-          expect(CKType.workout.calories.toString(), 'workout.calories');
+          expect(CKType.workout.energy.toString(), 'workout.energy');
         });
       });
     });
@@ -115,8 +115,11 @@ void main() {
       test('returns correct type for valid component type string', () {
         expect(CKType.fromString('bloodPressure.systolic'),
             equals(CKType.bloodPressure.systolic));
-        expect(CKType.fromString('nutrition.calories'),
-            equals(CKType.nutrition.calories));
+        expect(
+            CKType.fromString('nutrition.energy'),
+            equals(
+              CKType.nutrition.energy,
+            ));
         expect(CKType.fromString('workout.distance'),
             equals(CKType.workout.distance));
       });
@@ -176,7 +179,7 @@ void main() {
         expect(CKType.isValid('steps'), isTrue);
         expect(CKType.isValid('bloodPressure'), isTrue);
         expect(CKType.isValid('bloodPressure.systolic'), isTrue);
-        expect(CKType.isValid('nutrition.calories'), isTrue);
+        expect(CKType.isValid('nutrition.energy'), isTrue);
       });
 
       test('returns false for invalid type strings', () {
@@ -197,7 +200,7 @@ void main() {
         expect(allTypes, contains(CKType.height));
         expect(allTypes, contains(CKType.bloodPressure));
         expect(allTypes, contains(CKType.bloodPressure.systolic));
-        expect(allTypes, contains(CKType.nutrition.calories));
+        expect(allTypes, contains(CKType.nutrition.energy));
       });
 
       test('returns all registered types from generated registry', () {
@@ -217,7 +220,7 @@ void main() {
         expect(allNames, contains('height'));
         expect(allNames, contains('bloodPressure'));
         expect(allNames, contains('bloodPressure.systolic'));
-        expect(allNames, contains('nutrition.calories'));
+        expect(allNames, contains('nutrition.energy'));
       });
 
       test('length matches allTypes', () {
@@ -234,12 +237,7 @@ void main() {
     group('generated registry integration', () {
       test('fromString uses generated registry', () {
         // Test that generated types are accessible
-        final types = [
-          'steps',
-          'height',
-          'bloodPressure',
-          'nutrition.calories'
-        ];
+        final types = ['steps', 'height', 'bloodPressure', 'nutrition.energy'];
         for (final typeName in types) {
           expect(() => CKType.fromString(typeName), returnsNormally);
         }

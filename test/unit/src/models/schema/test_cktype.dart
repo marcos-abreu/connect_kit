@@ -18,7 +18,7 @@ void main() {
   // Test component types (this should work!)
   print('\nComponent types:');
   print('  CKType.workout.distance: ${CKType.workout.distance}');
-  print('  CKType.nutrition.calories: ${CKType.nutrition.calories}');
+  print('  CKType.nutrition.energy: ${CKType.nutrition.energy}');
   print('  CKType.bloodPressure.systolic: ${CKType.bloodPressure.systolic}');
 
   // Test string representations
@@ -34,7 +34,7 @@ void main() {
   print(
       '  CKType.fromString("workout.distance"): ${CKType.fromString("workout.distance")}');
   print(
-      '  CKType.fromString("nutrition.calories"): ${CKType.fromString("nutrition.calories")}');
+      '  CKType.fromString("nutrition.energy"): ${CKType.fromString("nutrition.energy")}');
 
   // Test safe fromString method
   print('\nSafe fromString methods:');
