@@ -10,6 +10,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Git Worktrees (project-local isolation)
+.worktrees/
+
 # 3. Miscellaneous
 *.class
 *.log
