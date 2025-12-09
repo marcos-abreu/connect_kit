@@ -116,7 +116,7 @@ class CKQuantityValue extends CKValue<num> {
   /// Creates a quantity value with the specified numeric value and unit.
   ///
   /// The unit must be compatible with the value type (e.g., mass units for weight).
-  CKQuantityValue(super.value, CKUnit super.unit);
+  CKQuantityValue(num value, CKUnit unit) : super(value, unit);
 }
 
 /// Categorical health data value (unitless).
@@ -143,16 +143,52 @@ class CKMultipleValue extends CKValue<Map<String, CKValue<Object?>>> {
   CKMultipleValue(value) : super(value, null);
 
   /// Gets a quantity field by name, or null if not present or wrong type.
-  CKQuantityValue? quantity(String key) => value[key] as CKQuantityValue?;
+  CKQuantityValue? quantity(String key) {
+    final v = value[key];
+    return v is CKQuantityValue ? v : null;
+  }
 
   /// Gets a category field by name, or null if not present or wrong type.
-  CKCategoryValue? category(String key) => value[key] as CKCategoryValue?;
+  CKCategoryValue? category(String key) {
+    final v = value[key];
+    return v is CKCategoryValue ? v : null;
+  }
+
+  /// Gets a label field by name, or null if not present or wrong type.
+  CKLabelValue? label(String key) {
+    final v = value[key];
+    return v is CKLabelValue ? v : null;
+  }
+
+  /// Gets a samples field by name, or null if not present or wrong type.
+  CKSamplesValue? samples(String key) {
+    final v = value[key];
+    return v is CKSamplesValue ? v : null;
+  }
 
   /// Gets the numeric value of a quantity field, or null if not present or wrong type.
-  num? numericValue(String key) => (value[key] as CKQuantityValue?)?.value;
+  num? numericValue(String key) {
+    final q = quantity(key);
+    return q?.value;
+  }
 
-  /// Gets the string value of a category field, or null if not present or wrong type.
-  Enum? stringValue(String key) => (value[key] as CKCategoryValue?)?.value;
+  /// Gets the enum value of a category field, or null if not present or wrong type.
+  Enum? enumValue(String key) {
+    final c = category(key);
+    return c?.value;
+  }
+
+  /// Gets the string value of a label field, or null if not present or wrong type.
+  String? stringValue(String key) {
+    final l = label(key);
+    return l?.value;
+  }
+
+  /// Gets the sample value of a samples field, or null if not present or wrong type.
+  List<CKSample>? samplesValue(String key) {
+    final s = samples(key);
+    return s?.value;
+  }
 }
 
 /// Time-series health data value with multiple samples.
@@ -164,24 +200,21 @@ class CKSamplesValue extends CKValue<List<CKSample>> {
   ///
   /// All samples in the list should use the same unit type for consistency
   /// (e.g., all heart rate samples in beats per minute).
-  CKSamplesValue(super.value, CKUnit super.unit);
+  CKSamplesValue(List<CKSample> value, CKUnit unit) : super(value, unit);
 
   /// Gets all numeric values from the samples list.
   ///
-  /// Returns a [List] of [num] values containing all samples that are quantity values.
-  /// Samples that are not quantity values are filtered out.
-  List<num> get numericValues => value
-      .where((s) => s.value is CKQuantityValue)
-      .map((s) => (s.value as CKQuantityValue).value)
-      .toList();
+  /// Returns a [List] of [num] values containing all sample values.
+  /// Since CKSample stores raw numeric values, no filtering or casting is needed.
+  List<num> get numericValues => value.map((s) => s.value).toList();
 
-  /// Gets the numeric sample at the specified index, or null if out of bounds or wrong type.
+  /// Gets the numeric value at the specified index, or null if out of bounds.
   ///
-  /// Returns a [CKQuantityValue] if the index is valid and the sample contains a quantity value,
-  /// otherwise returns null.
-  CKQuantityValue? numericSampleAt(int index) {
+  /// Returns the raw [num] value if the index is valid, otherwise returns null.
+  /// The unit for this value is inherited from the parent CKSamplesValue.
+  num? numericValueAt(int index) {
     if (index >= 0 && index < value.length) {
-      return value[index].value as CKQuantityValue?;
+      return value[index].value;
     }
     return null;
   }
@@ -205,6 +238,3 @@ class CKSample {
   /// Creates a sample with the specified time and value.
   CKSample(this.value, this.time);
 }
-
-final test = CKUnit.energy.joule;
-final test2 = CKEnergyUnit.joule;

@@ -7,21 +7,20 @@ import 'package:connect_kit/src/models/ck_write_result.dart';
 import 'package:connect_kit/src/logging/ck_logger.dart';
 import 'package:connect_kit/src/utils/ck_constants.dart';
 
-/// TODO: add proper documentation
-///  Service for handling SDK availability and permission management
+/// Service for writing records to the platform
 class WriteService {
   /// Static log TAG
   static const String logTag = 'WriteService';
 
   final ConnectKitHostApi _hostApi;
 
-  /// TODO: Add documentation
-  WriteService(this._hostApi);
+  /// Service constructor
+  WriteService(ConnectKitHostApi hostApi) : _hostApi = hostApi;
 
   /// Writes one or more health records with best-effort semantics.
   ///
   /// **Process:**
-  /// 1. Validates and maps records on Dart (common valitaion) side
+  /// 1. Validates and maps records on Dart (common validation) side
   /// 2. Sends valid records to native platform
   /// 3. Receives WriteResultMessage with native decoding/validation failures
   /// 4. Merges Dart failures + native failures

@@ -8,8 +8,6 @@ enum CKBodyTemperatureMeasurementLocation {
   rectum,
   artery,
   toe,
-  vagina,
-  wrist,
   unknown,
 }
 
@@ -94,7 +92,6 @@ enum CKCervicalMucusAppearance {
   creamy,
   watery,
   eggWhite,
-  unusual,
   unknown,
 }
 
@@ -125,4 +122,56 @@ enum CKSexualActivityProtection {
 enum CKActivityIntensityType {
   moderate,
   vigorous,
+}
+
+enum CKBiologicalSexType {
+  female,
+  male,
+  other,
+  unknown,
+}
+
+enum CKBloodType {
+  aPositive,
+  aNegative,
+  bPositive,
+  bNegative,
+  abPositive,
+  abNegative,
+  oPositive,
+  oNegative,
+  unknown,
+}
+
+enum CKFitzpatrickSkinType {
+  i,
+  ii,
+  iii,
+  iv,
+  v,
+  vi,
+  unknown,
+}
+
+enum CKIntermenstrualBleedingType {
+  notApplicable,
+  unknown,
+}
+
+enum CKContraceptiveValue {
+  implant,
+  injection,
+  intrauterineDevice,
+  intravaginalRing,
+  oral,
+  patch,
+  unspecified,
+  unknown,
+}
+
+enum CKProgesteroneTestResult {
+  negative,
+  positive,
+  indeterminate,
+  unknown,
 }

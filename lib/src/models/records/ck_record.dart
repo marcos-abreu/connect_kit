@@ -28,16 +28,20 @@ abstract class CKRecord {
   /// Data source information (recording method, sync IDs, device)
   final CKSource? source;
 
+  /// Record metadata information
+  final Map<String, Object>? metadata;
+
   /// TODO: add documentation
-  const CKRecord({
+  CKRecord({
     this.id,
     required this.startTime,
     required this.endTime,
     Duration? startZoneOffset,
     Duration? endZoneOffset,
     this.source,
-  })  : startZoneOffset = startZoneOffset ?? Duration.zero,
-        endZoneOffset = endZoneOffset ?? Duration.zero;
+    this.metadata,
+  })  : startZoneOffset = startZoneOffset ?? startTime.timeZoneOffset,
+        endZoneOffset = endZoneOffset ?? endTime.timeZoneOffset;
 
   /// Validate record before sending to platform
   void validate() {

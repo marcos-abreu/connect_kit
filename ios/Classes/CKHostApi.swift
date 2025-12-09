@@ -14,9 +14,14 @@ class CKHostApi: NSObject, ConnectKitHostApi {
     private static let TAG = "CKHostApi"
 
     private let permissionService: PermissionService
+    private let writeService: WriteService
 
-    init(permissionService: PermissionService) {
+    init(
+        permissionService: PermissionService,
+        writeService: WriteService
+    ) {
         self.permissionService = permissionService
+        self.writeService = writeService
 
         CKLogger.i(
             tag: CKHostApi.TAG,
@@ -196,6 +201,36 @@ class CKHostApi: NSObject, ConnectKitHostApi {
             } catch {
                 completion(.failure(error))
             }
+        }
+    }
+
+    /// Writes health records to the HealthKit store.
+    ///
+    /// This method encodes and writes one or more health records (e.g., workouts, nutrition,
+    /// sleep sessions) to HealthKit. Each record must conform to a recognized schema
+    /// supported by the connected platform.
+    ///
+    /// **Usage:**
+    /// - Ensure all required permissions are granted before calling.
+    /// - Use record mappers to build record maps that match expected input formats.
+    /// - Returns a list of record IDs that were successfully written.
+    ///
+    /// - Parameters:
+    ///   - records: A list of record maps containing the data to write
+    ///   - completion: The completion handler returning WriteResultMessage or error
+    func writeRecords(
+        records: [[String: Any?]],
+        completion: @escaping (Result<WriteResultMessage, Error>) -> Void
+    ) {
+        Task {
+            // Filter out nil values from the maps to match expected [[String: Any]] type
+            // Swift's [String: Any?] is not directly compatible with [String: Any]
+            let sanitizedRecords = records.map { record in
+                record.compactMapValues { $0 }
+            }
+
+            let result = await writeService.writeRecords(sanitizedRecords)
+            completion(.success(result))
         }
     }
 }

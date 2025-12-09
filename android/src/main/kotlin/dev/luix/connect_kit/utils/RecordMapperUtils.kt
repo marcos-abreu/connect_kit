@@ -10,6 +10,20 @@ import dev.luix.connect_kit.utils.CKConstants
 import java.time.Instant
 import java.time.ZoneOffset
 
+data class RecordTimeRange(
+    val startTime: Instant,
+    val startZoneOffset: ZoneOffset?,
+    val endTime: Instant,
+    val endZoneOffset: ZoneOffset?
+)
+
+data class UnwrappedValue(
+    val value: Any,
+    val unit: String?,
+    val valuePattern: String,
+    val derivedMetadata: Map<String, Any>
+)
+
 /**
  * Common utility functions for all record mappers.
  *
@@ -139,20 +153,10 @@ object RecordMapperUtils {
     // === Time Handling ===
 
     /**
-     * Parses ISO 8601 timestamp string to Instant.
-     * @throws RecordMapperException if timestamp is invalid
+     * Parses milliseconds-since-epoch timestamp to Instant.
      */
-    fun parseInstant(timestamp: String, fieldName: String, recordKind: String): Instant {
-        return try {
-            Instant.parse(timestamp)
-        } catch (e: Exception) {
-            throw RecordMapperException(
-                message = "Invalid ISO 8601 timestamp: '$timestamp'",
-                recordKind = recordKind,
-                fieldName = fieldName,
-                cause = e
-            )
-        }
+    fun parseInstant(timestampMs: Long, fieldName: String, recordKind: String): Instant {
+        return Instant.ofEpochMilli(timestampMs)
     }
 
     /**
@@ -162,7 +166,177 @@ object RecordMapperUtils {
         return ZoneOffset.ofTotalSeconds(seconds)
     }
 
+    // /**
+    //  Extracts start and end times from the workout map.
+    //  Validates that end time is not before start time.
+    //  */
+    fun extractTimeRange(
+        map: Map<String, Any?>,
+        recordKind: String
+    ): RecordTimeRange {
+        val (startTime, startZoneOffset) = extractTime(map, "startTime", "startZoneOffsetSeconds", recordKind)
+        val (endTime, endZoneOffset) = extractTime(map, "endTime", "endZoneOffsetSeconds", recordKind)
+
+        // Validate time order
+        validateTimeOrder(startTime, endTime, recordKind)
+
+        return RecordTimeRange(
+            startTime,
+            startZoneOffset,
+            endTime,
+            endZoneOffset
+        )
+    }
+
+    /**
+     * Extracts a time and its zone offset from the map.
+     */
+    fun extractTime(
+        map: Map<String, Any?>,
+        timeKey: String,
+        offsetKey: String,
+        recordKind: String
+    ): Pair<Instant, ZoneOffset> {
+        val timestampMs = getRequiredInt(map, timeKey, recordKind)
+        val timestamp = parseInstant(timestampMs.toLong(), timeKey, recordKind)
+
+        val offsetSeconds = getRequiredInt(map, offsetKey, recordKind)
+        val offset = parseZoneOffset(offsetSeconds)
+
+        return Pair(timestamp, offset)
+    }
+
     // === Value & Unit Handling ===
+
+    /**
+     * Unwraps the data from the map.
+     */
+    fun unwrapData(
+        dataMap: Map<String, Any>,
+        recordMap: Map<String, Any?>,
+        type: String,
+        recordKind: String,
+        unwrapMultiple: Boolean = true
+    ): UnwrappedValue {
+        val rootValuePattern = getRequiredString(
+            dataMap, "valuePattern", recordKind)
+
+        val rootValue = dataMap["value"] ?: throw RecordMapperException(
+            message = "Record data 'value' is missing",
+            recordKind = recordKind,
+            fieldName = "value"
+        )
+        val rootUnit = getOptionalString(dataMap, "unit")
+
+        return when (rootValuePattern) {
+            CKConstants.VALUE_PATTERN_QUANTITY -> {
+                val quantityDouble = expectQuantityValue(rootValue, rootValuePattern, recordKind)
+                UnwrappedValue(quantityDouble, rootUnit, rootValuePattern, emptyMap())
+            }
+
+            CKConstants.VALUE_PATTERN_CATEGORY -> {
+                val categoryMap = expectCategoryValue(dataMap, rootValue, rootValuePattern, recordKind)
+                UnwrappedValue(categoryMap, rootUnit, rootValuePattern, emptyMap())
+            }
+
+            CKConstants.VALUE_PATTERN_SAMPLES -> {
+                val samplesValue = expectSamplesValue(rootValue, rootValuePattern, recordKind)
+                UnwrappedValue(samplesValue, rootUnit, rootValuePattern, emptyMap())
+            }
+
+            CKConstants.VALUE_PATTERN_LABEL -> {
+                val labelValue = expectLabelValue(rootValue, rootValuePattern, recordKind)
+                UnwrappedValue(labelValue, rootUnit, rootValuePattern, emptyMap())
+            }
+
+            CKConstants.VALUE_PATTERN_MULTIPLE -> {
+                if (!unwrapMultiple) {
+                    throw RecordMapperException(
+                        message = "Multiple value encountered but unwrapMultiple=false",
+                        recordKind = recordKind,
+                        fieldName = "value"
+                    )
+                }
+
+                val multipleMap = rootValue as? Map<String, Any> ?: throw RecordMapperException(
+                    message = "Invalid multiple value: expected Map, got '$rootValue'",
+                    recordKind = recordKind,
+                    fieldName = "value"
+                )
+
+                val customMetadata = recordMap["metadata"] as? Map<String, Any> ?: throw RecordMapperException(
+                    message = "Missing required metadata for MULTIPLE value",
+                    recordKind = recordKind,
+                    fieldName = "metadata"
+                )
+
+                val mainPropertyKey = customMetadata["mainProperty"] as? String ?: throw RecordMapperException(
+                    message = "Missing required 'mainProperty' in record metadata for MULTIPLE value",
+                    recordKind = recordKind,
+                    fieldName = "metadata.mainProperty"
+                )
+
+                if (mainPropertyKey.isEmpty()) {
+                    throw RecordMapperException(
+                        message = "'mainProperty' must not be empty",
+                        recordKind = recordKind,
+                        fieldName = "metadata.mainProperty"
+                    )
+                }
+
+                val mainPropertyMap = multipleMap[mainPropertyKey] as? Map<String, Any> ?: throw RecordMapperException(
+                    message = "Main property '$mainPropertyKey' not found in MULTIPLE value",
+                    recordKind = recordKind,
+                    fieldName = mainPropertyKey
+                )
+
+                // Recursively unwrap main property
+                val main = unwrapData(
+                    dataMap = mainPropertyMap,
+                    recordMap = recordMap,
+                    type = type,
+                    recordKind = recordKind,
+                    unwrapMultiple = false // important: prevent nested multiple
+                )
+
+                // Collect non-main properties into customMetadata for later processing
+                val derivedMetadata = mutableMapOf<String, Any>()
+                
+                // Process all non-main properties
+                for ((propKey, propRaw) in multipleMap) {
+                    if (propKey == mainPropertyKey) continue // Skip main property
+
+                    val propMap = propRaw as? Map<String, Any>
+                    if (propMap == null) {
+                        CKLogger.w(
+                            tag = TAG,
+                            message = "MULTIPLE property '$propKey' is not a map, skipping"
+                        )
+                        continue
+                    }
+                    
+                    // Recursively unwrap non-main property
+                    val prop = unwrapData(
+                        dataMap = propMap,
+                        recordMap = recordMap,
+                        type = type,
+                        recordKind = recordKind,
+                        unwrapMultiple = false // important: prevent nested multiple
+                    )
+
+                    derivedMetadata[propKey] = prop
+                }
+
+                UnwrappedValue(main.value, main.unit, main.valuePattern, derivedMetadata)
+            }
+
+            else -> throw RecordMapperException(
+                message = "Unsupported valuePattern '$rootValuePattern'",
+                recordKind = recordKind,
+                fieldName = "valuePattern"
+            )
+        }
+    }
 
     /**
      * TODO: add documentation
@@ -175,34 +349,75 @@ object RecordMapperUtils {
         )
 
     /**
-     * Ensures that the value is numeric (Double/Long/Int) and returns as Double.
+     * Ensures that the value is a valid label value and returns as String.
      *
      * @param value The value to check
-     * @param valuePattern Expected value pattern
+     * @param valuePattern The value pattern to check
+     * @param recordKind For logging/exception context
+     * @return The label value as String
+     * @throws RecordMapperException if the value pattern is incompatible
+     */
+    fun expectLabelValue(value: Any, valuePattern: String, recordKind: String): String {
+        if (valuePattern != CKConstants.VALUE_PATTERN_LABEL) {
+            throw RecordMapperException(
+                message = "Expected valuePattern '${CKConstants.VALUE_PATTERN_LABEL}', got '$valuePattern'",
+                recordKind = recordKind,
+                fieldName = "valuePattern"
+            )
+        }
+
+        val labelValue =  value as? String ?: throw RecordMapperException(
+            message = "Invalid label value: expected String, got '${value::class.simpleName}'",
+            recordKind = recordKind,
+            fieldName = "value"
+        )
+
+        return labelValue
+    }
+
+    /**
+     * Ensures that the value is a valid quantity value and returns as Double.
+     *
+     * @param value The value to check
+     * @param valuePattern The value pattern to check
      * @param recordKind For logging/exception context
      * @return The numeric value as Double
      * @throws RecordMapperException if the value pattern is incompatible
      */
-    fun expectNumericValue(value: Any, valuePattern: String, recordKind: String): Double {
-        if (value !is Number) {
+    fun expectQuantityValue(value: Any, valuePattern: String, recordKind: String): Double {
+        if (valuePattern != CKConstants.VALUE_PATTERN_QUANTITY) {
             throw RecordMapperException(
-                message = "Expected numeric value for pattern '$valuePattern', got ${value::class.simpleName}",
-                recordKind = recordKind
+                message = "Expected valuePattern '${CKConstants.VALUE_PATTERN_QUANTITY}', got '$valuePattern'",
+                recordKind = recordKind,
+                fieldName = "valuePattern"
             )
         }
-        return value.toDouble()
+
+        val quantityDouble = when (value) {
+            is Double -> value
+            is Float -> value.toDouble()
+            is Long -> value.toDouble()
+            is Int -> value.toDouble()
+            else -> throw RecordMapperException(
+                message = "Invalid quantity value: expected numeric type, got '${value::class.simpleName}'",
+                recordKind = recordKind,
+                fieldName = "value"
+            )
+        }
+        return quantityDouble
     }
 
     /**
-     * Ensures that the value is a valid category (string)
+     * Ensures that the value is a valid category value and returns as Map.
      *
-     * @param value The raw value from Dart
-     * @param valuePattern Expected value pattern, should be "category"
+     * @param dataMap The data map containing the category name
+     * @param value The value to check
+     * @param valuePattern The value pattern to check
      * @param recordKind For logging/exception context
-     * @return String string representation of a category
-     * @throws RecordMapperException if the value is not a valid category like
+     * @return The category value as Map
+     * @throws RecordMapperException if the value pattern is incompatible
      */
-    fun expectCategoryValue(value: Any?, valuePattern: String, recordKind: String): String {
+    fun expectCategoryValue(dataMap: Map<String, Any>, value: Any, valuePattern: String, recordKind: String): Map<String, Any> {
         if (valuePattern != CKConstants.VALUE_PATTERN_CATEGORY) {
             throw RecordMapperException(
                 message = "Expected valuePattern '${CKConstants.VALUE_PATTERN_CATEGORY}', got '$valuePattern'",
@@ -211,15 +426,26 @@ object RecordMapperUtils {
             )
         }
 
-        if (value !is String) {
-            throw RecordMapperException(
-                message = "Expected String for category value, got ${value?.javaClass?.name}",
-                recordKind = recordKind,
-                fieldName = "value"
-            )
-        }
+        val categoryValue = value as? String ?: throw RecordMapperException(
+            message = "Invalid category value: expected String, got '${value::class.simpleName}'",
+            recordKind = recordKind,
+            fieldName = "value"
+        )
 
-        return value
+        val rawCategory = dataMap["categoryName"]
+        val rawType = rawCategory?.let { it::class.simpleName } ?: "null"
+        val categoryName = rawCategory as? String ?: throw RecordMapperException(
+            message = "Invalid categoryName for value: expected String, got '$rawType'",
+            recordKind = recordKind,
+            fieldName = "categoryName"
+        )
+
+        val categoryMap = mapOf(
+            "value" to categoryValue,
+            "categoryName" to categoryName
+        )
+
+        return categoryMap
     }
 
     /**
@@ -228,15 +454,15 @@ object RecordMapperUtils {
      * - [value]: numeric measurement (e.g., heart rate in bpm, speed in m/s)
      * - [timeMillis]: absolute time in epoch milliseconds (from Dart's `time.inMilliseconds`)
      *
-     * This is a **temporary parsing structure** — do not expose outside RecordMapperUtils.
+     * This is a **temporary parsing structure** — do not expose outside 
      */
-    data class RawSample(
+    data class DataSample(
         val value: Double,
         val timeMillis: Long
     )
 
     /**
-     * Parses a list of sample maps from Dart into a list of [RawSample].
+     * Parses a list of sample maps from Dart into a list of [DataSample].
      *
      * Each sample map must contain:
      * - "value": a numeric value (int or double)
@@ -245,14 +471,14 @@ object RecordMapperUtils {
      * @param value The raw value from Dart (must be List<*>)
      * @param valuePattern Must be [CKConstants.VALUE_PATTERN_SAMPLES]
      * @param recordKind Used for error context
-     * @return Non-empty list of [RawSample], or throws if invalid
+     * @return Non-empty list of [DataSample], or throws if invalid
      * @throws RecordMapperException if structure is invalid
      */
     fun expectSamplesValue(
         value: Any,
         valuePattern: String,
         recordKind: String
-    ): List<RawSample> {
+    ): List<DataSample> {
         if (valuePattern != CKConstants.VALUE_PATTERN_SAMPLES) {
             throw RecordMapperException(
                 message = "Expected valuePattern '${CKConstants.VALUE_PATTERN_SAMPLES}', got '$valuePattern'",
@@ -261,8 +487,8 @@ object RecordMapperUtils {
             )
         }
 
-        val sampleList = value as? List<*> ?: throw RecordMapperException(
-            message = "Expected List for samples, got ${value::class.simpleName}",
+        val sampleList = value as? List<Map<String, Any>> ?: throw RecordMapperException(
+            message = "Invalid samples value: expected List<Map<String, Any>>, got '${value::class.simpleName}'",
             recordKind = recordKind,
             fieldName = "value"
         )
@@ -297,89 +523,11 @@ object RecordMapperUtils {
                 )
             }
 
-            RawSample(
+            DataSample(
                 value = rawValue.toDouble(),
                 timeMillis = rawTime.toLong()
             )
         }
-    }
-
-
-    /**
-     * TODO: add documentation
-     */
-    data class FieldData(
-        val value: Any,
-        val unit: String?,
-        val valuePattern: String
-    )
-
-    /**
-     * Validates and extracts fields from a CKMultipleValue map.
-     *
-     * @param value The outer "value" object (must be Map<*, *>)
-     * @param valuePattern Must be CKConstants.VALUE_PATTERN_MULTIPLE
-     * @param type Record type, for logging
-     * @param possibleFields Map of possible field names and their expected valuePatterns
-     * @param recordKind For logging/exception context
-     * @return Map of field name to FieldData
-     * @throws RecordMapperException if structure is invalid
-     */
-    fun expectMultipleValue(
-        value: Any,
-        valuePattern: String,
-        type: String,
-        possibleFields: Map<String, String>,
-        recordKind: String
-    ): Map<String, FieldData> {
-        if (valuePattern != CKConstants.VALUE_PATTERN_MULTIPLE) {
-            throw RecordMapperException(
-                message = "Expected '${CKConstants.VALUE_PATTERN_MULTIPLE}' valuePattern for CKMultipleValue, got '$valuePattern'",
-                recordKind = recordKind,
-                fieldName = type
-            )
-        }
-
-        val valueMap = value as? Map<*, *> ?: throw RecordMapperException(
-            message = "Expected Map for CKMultipleValue, got ${value::class.simpleName}",
-            recordKind = recordKind,
-            fieldName = type
-        )
-
-        val result = mutableMapOf<String, FieldData>()
-
-        for ((key, expectedPattern) in possibleFields) {
-            val fieldMap = valueMap[key] as? Map<*, *> ?: continue // optional field
-
-            val fieldValue = fieldMap["value"]
-                ?: throw RecordMapperException(
-                    message = "Field '$key' missing 'value'",
-                    recordKind = recordKind,
-                    fieldName = type
-                )
-            val fieldUnit = fieldMap["unit"] as? String
-            val fieldPattern = fieldMap["valuePattern"] as? String
-                ?: throw RecordMapperException(
-                    message = "Field '$key' missing 'valuePattern'",
-                    recordKind = recordKind,
-                    fieldName = type
-                )
-
-            if (fieldPattern != expectedPattern) {
-                throw RecordMapperException(
-                    message = "Field '$key' expected pattern '$expectedPattern', got '$fieldPattern'",
-                    recordKind = recordKind,
-                    fieldName = type
-                )
-            }
-
-            result[key] = FieldData(
-                value = fieldValue,
-                unit = fieldUnit,
-                valuePattern = fieldPattern
-            )
-        }
-        return result
     }
 
     // === Unit Conversion ===
@@ -629,16 +777,18 @@ object RecordMapperUtils {
 
         val recordingMethodString = sourceMap["recordingMethod"] as? String
         val recordingMethod = mapRecordingMethod(recordingMethodString ?: "unknown")
-        val clientRecordId = sourceMap["clientRecordId"] as? String
-        val clientRecordVersion = (sourceMap["clientRecordVersion"] as? Number)?.toLong() ?: 0L
+
+        val sdkRecordId = sourceMap["sdkRecordId"] as? String
+        val sdkRecordVersion = (sourceMap["sdkRecordVersion"] as? Number)?.toLong() ?: 0L
+
         val deviceMap = sourceMap["device"] as? Map<String, Any>
         val device = deviceMap?.let { buildDevice(it) }
 
         // Build metadata using factory methods
         return when (recordingMethod) {
             Metadata.RECORDING_METHOD_MANUAL_ENTRY -> {
-                if (clientRecordId != null) {
-                    Metadata.manualEntry(clientRecordId, clientRecordVersion, device)
+                if (sdkRecordId != null) {
+                    Metadata.manualEntry(sdkRecordId, sdkRecordVersion, device)
                 } else {
                     Metadata.manualEntry(device) // Overload without clientRecordId
                 }
@@ -646,8 +796,8 @@ object RecordMapperUtils {
 
             Metadata.RECORDING_METHOD_ACTIVELY_RECORDED -> {
                 if (device != null) {
-                    if (clientRecordId != null) {
-                        Metadata.activelyRecorded(device, clientRecordId, clientRecordVersion)
+                    if (sdkRecordId != null) {
+                        Metadata.activelyRecorded(device, sdkRecordId, sdkRecordVersion)
                     } else {
                         Metadata.activelyRecorded(device) // Overload without clientRecordId
                     }
@@ -656,8 +806,8 @@ object RecordMapperUtils {
                         tag = TAG,
                         message = "Actively recorded data requires device, falling back to unknown"
                     )
-                    if (clientRecordId != null) {
-                        Metadata.unknownRecordingMethod(clientRecordId, clientRecordVersion)
+                    if (sdkRecordId != null) {
+                        Metadata.unknownRecordingMethod(sdkRecordId, sdkRecordVersion)
                     } else {
                         Metadata.unknownRecordingMethod()
                     }
@@ -666,8 +816,8 @@ object RecordMapperUtils {
 
             Metadata.RECORDING_METHOD_AUTOMATICALLY_RECORDED -> {
                 if (device != null) {
-                    if (clientRecordId != null) {
-                        Metadata.autoRecorded(device, clientRecordId, clientRecordVersion)
+                    if (sdkRecordId != null) {
+                        Metadata.autoRecorded(device, sdkRecordId, sdkRecordVersion)
                     } else {
                         Metadata.autoRecorded(device) // Overload without clientRecordId
                     }
@@ -676,8 +826,8 @@ object RecordMapperUtils {
                         tag = TAG,
                         message = "Automatically recorded data requires device, falling back to unknown"
                     )
-                    if (clientRecordId != null) {
-                        Metadata.unknownRecordingMethod(clientRecordId, clientRecordVersion)
+                    if (sdkRecordId != null) {
+                        Metadata.unknownRecordingMethod(sdkRecordId, sdkRecordVersion)
                     } else {
                         Metadata.unknownRecordingMethod()
                     }
@@ -685,8 +835,8 @@ object RecordMapperUtils {
             }
 
             else -> {
-                if (clientRecordId != null) {
-                    Metadata.unknownRecordingMethod(clientRecordId, clientRecordVersion, device)
+                if (sdkRecordId != null) {
+                    Metadata.unknownRecordingMethod(sdkRecordId, sdkRecordVersion, device)
                 } else {
                     Metadata.unknownRecordingMethod(device)
                 }
@@ -697,7 +847,7 @@ object RecordMapperUtils {
     /**
      * Maps recording method string to Health Connect constant.
      */
-    private fun mapRecordingMethod(method: String): Int {
+    fun mapRecordingMethod(method: String): Int {
         return when (method.lowercase()) {
             "manualentry" -> Metadata.RECORDING_METHOD_MANUAL_ENTRY
             "activelyrecorded" -> Metadata.RECORDING_METHOD_ACTIVELY_RECORDED
@@ -716,7 +866,7 @@ object RecordMapperUtils {
     /**
      * Builds Health Connect Device from device map.
      */
-    private fun buildDevice(deviceMap: Map<String, Any>): Device {
+    fun buildDevice(deviceMap: Map<String, Any>): Device {
         val manufacturer = deviceMap["manufacturer"] as? String
         val model = deviceMap["model"] as? String
         val typeString = deviceMap["type"] as? String ?: "unknown"
@@ -732,7 +882,7 @@ object RecordMapperUtils {
     /**
      * Maps device type string to Health Connect constant.
      */
-    private fun mapDeviceType(type: String): Int {
+    fun mapDeviceType(type: String): Int {
         return when (type.lowercase()) {
             "phone" -> Device.TYPE_PHONE
             "watch" -> Device.TYPE_WATCH
@@ -770,60 +920,5 @@ object RecordMapperUtils {
             )
         }
     }
-
-    // /**
-    //  * Validates that a value is positive.
-    //  * @throws RecordMapperException if value is negative or zero
-    //  */
-    // fun validatePositive(
-    //     value: Double,
-    //     fieldName: String,
-    //     recordKind: String
-    // ) {
-    //     if (value <= 0) {
-    //         throw RecordMapperException.invalidFieldValue(
-    //             fieldName = fieldName,
-    //             reason = "Value must be positive, got: $value",
-    //             recordKind = recordKind
-    //         )
-    //     }
-    // }
-
-    // /**
-    //  * Validates that a value is non-negative.
-    //  * @throws RecordMapperException if value is negative
-    //  */
-    // fun validateNonNegative(
-    //     value: Double,
-    //     fieldName: String,
-    //     recordKind: String
-    // ) {
-    //     if (value < 0) {
-    //         throw RecordMapperException.invalidFieldValue(
-    //             fieldName = fieldName,
-    //             reason = "Value must be non-negative, got: $value",
-    //             recordKind = recordKind
-    //         )
-    //     }
-    // }
-
-    // /**
-    //  * Validates that a value is within a specified range.
-    //  * @throws RecordMapperException if value is out of range
-    //  */
-    // fun validateRange(
-    //     value: Double,
-    //     min: Double,
-    //     max: Double,
-    //     fieldName: String,
-    //     recordKind: String
-    // ) {
-    //     if (value < min || value > max) {
-    //         throw RecordMapperException.invalidFieldValue(
-    //             fieldName = fieldName,
-    //             reason = "Value must be between $min and $max, got: $value",
-    //             recordKind = recordKind
-    //         )
-    //     }
-    // }
 }
+

@@ -47,6 +47,7 @@ class PropertyDefinition {
   final String pattern;
   final String type;
   final bool isRequired;
+  final bool isMainProperty;
   final bool isUnitClass;
 
   PropertyDefinition({
@@ -54,6 +55,7 @@ class PropertyDefinition {
     required this.pattern,
     required this.type,
     required this.isRequired,
+    required this.isMainProperty,
     required this.isUnitClass,
   });
 }
@@ -104,7 +106,7 @@ List<TypeDefinition> _parseTypes(String content) {
 
   // Pattern to match property annotations
   final propPattern = RegExp(
-    r'///\s*@ck-type-prop:\s*(\w+):(\w+):([^\s]+)\s+(required|optional)',
+    r'///\s*@ck-type-prop:\s*(\w+):(\w+):([^\s]+)\s+(required|optional)\s*(main)?',
   );
 
   for (int i = 0; i < lines.length; i++) {
@@ -163,6 +165,8 @@ List<TypeDefinition> _parseTypes(String content) {
               final propPattern = propMatch.group(2)!;
               final propType = propMatch.group(3)!;
               final isRequired = propMatch.group(4) == 'required';
+              final isMainProperty = pattern == LocalValuePattern.multiple &&
+                  (propMatch.group(5) != null && propMatch.group(5) == 'main');
 
               // Determine if type is a unit class or specific unit
               final isUnitClass = !propType.contains('.');
@@ -174,6 +178,7 @@ List<TypeDefinition> _parseTypes(String content) {
                   pattern: propPattern,
                   type: propType,
                   isRequired: isRequired,
+                  isMainProperty: isMainProperty,
                   isUnitClass: isUnitClass,
                 ),
               );
@@ -254,6 +259,17 @@ void _validateProperties(
           'Type $typeName with pattern $pattern must have at least 1 property annotation',
         );
       }
+
+      // Check if more than one property has isMainProperty == true
+      final mainCount =
+          properties.where((property) => property.isMainProperty).length;
+      if (mainCount != 1) {
+        final msgCount = mainCount == 0 ? 'must have' : 'cannot have more than';
+        throw StateError(
+          'Type $typeName with pattern $pattern $msgCount one property marked as \'main\'',
+        );
+      }
+
       break;
     case LocalValuePattern.none:
       // For none pattern, we expect the annotation but ignore property count
@@ -432,15 +448,21 @@ List<String> _generateParameters(TypeDefinition type) {
   // Source
   params.add('required CKSource source');
 
+  // Metadata
+  // params.add('Map<String, Object>? metadata');
+
   return params;
 }
 
 String _generateMethodBody(TypeDefinition type) {
   final buffer = StringBuffer();
+  var requiresMetadata = false;
 
   if (type.pattern == LocalValuePattern.multiple) {
     // Build data map for multiple pattern
     buffer.writeln('    final data = <String, CKValue>{');
+
+    String? mainProperty;
 
     for (final prop in type.properties) {
       if (prop.isRequired) {
@@ -464,6 +486,8 @@ String _generateMethodBody(TypeDefinition type) {
 
     // Add optional properties
     for (final prop in type.properties) {
+      if (prop.isMainProperty) mainProperty = prop.name;
+
       if (!prop.isRequired) {
         buffer.writeln('    if (${prop.name} != null) {');
         if (prop.pattern == 'quantity') {
@@ -482,6 +506,17 @@ String _generateMethodBody(TypeDefinition type) {
         buffer.writeln('    }');
         buffer.writeln();
       }
+    }
+
+    if (mainProperty != null) {
+      requiresMetadata = true;
+      buffer.writeln(
+          '    final metadata = {\'mainProperty\': \'$mainProperty\'};');
+      // buffer.writeln('    metadata = metadata  != null');
+      // buffer.writeln(
+      //     '      ? { ...metadata, \'mainProperty\': \'$mainProperty\' }');
+      // buffer.writeln('      : { \'mainProperty\': \'$mainProperty\' };');
+      buffer.writeln();
     }
   }
 
@@ -529,6 +564,9 @@ String _generateMethodBody(TypeDefinition type) {
   }
 
   buffer.writeln('      source: source,');
+  if (requiresMetadata) {
+    buffer.writeln('      metadata: metadata,');
+  }
   buffer.writeln('    );');
 
   return buffer.toString();

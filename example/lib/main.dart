@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:connect_kit/connect_kit.dart';
 import 'permission_demo_screen.dart';
+import 'write_data_demo_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -98,8 +99,7 @@ class _LandingPageState extends State<LandingPage> {
             final writeStatus = permissions.getStatus(type, CKAccessType.write);
 
             _permissionResults.add(
-              '${type.displayName}: Read=${readStatus.name}, Write=${writeStatus.name}'
-            );
+                '${type.displayName}: Read=${readStatus.name}, Write=${writeStatus.name}');
           }
         });
       } else {
@@ -188,7 +188,9 @@ class _LandingPageState extends State<LandingPage> {
                   children: [
                     Icon(
                       Icons.check_circle,
-                      color: _sdkStatus == 'available' ? Colors.green : Colors.orange,
+                      color: _sdkStatus == 'available'
+                          ? Colors.green
+                          : Colors.orange,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -203,7 +205,9 @@ class _LandingPageState extends State<LandingPage> {
                       child: Text(
                         _sdkStatus,
                         style: TextStyle(
-                          color: _sdkStatus == 'available' ? Colors.green : Colors.orange,
+                          color: _sdkStatus == 'available'
+                              ? Colors.green
+                              : Colors.orange,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -306,7 +310,7 @@ class _LandingPageState extends State<LandingPage> {
                               height: 1.4,
                             ),
                           ),
-                          ],
+                        ],
                       ),
                     ),
                   ],
@@ -325,13 +329,16 @@ class _LandingPageState extends State<LandingPage> {
                 children: [
                   // Permissions button
                   ElevatedButton(
-                    onPressed: _sdkStatus == 'available' ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PermissionDemoScreen(),
-                        ),
-                      );
-                    } : null,
+                    onPressed: _sdkStatus == 'available'
+                        ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const PermissionDemoScreen(),
+                              ),
+                            );
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[600],
                       foregroundColor: Colors.white,
@@ -357,15 +364,22 @@ class _LandingPageState extends State<LandingPage> {
                             color: Colors.white,
                           ),
                         ),
-                        ],
+                      ],
                     ),
                   ),
 
                   // Write Data button
                   ElevatedButton(
-                    onPressed: _sdkStatus == 'available' ? () {
-                      // TODO: Implement write data functionality
-                    } : null,
+                    onPressed: _sdkStatus == 'available'
+                        ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const WriteDataDemoScreen(),
+                              ),
+                            );
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green[600],
                       foregroundColor: Colors.white,
@@ -397,9 +411,11 @@ class _LandingPageState extends State<LandingPage> {
 
                   // Read Data button
                   ElevatedButton(
-                    onPressed: _sdkStatus == 'available' ? () {
-                      // TODO: Implement read data functionality
-                    } : null,
+                    onPressed: _sdkStatus == 'available'
+                        ? () {
+                            // TODO: Implement read data functionality
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple[600],
                       foregroundColor: Colors.white,
@@ -431,9 +447,11 @@ class _LandingPageState extends State<LandingPage> {
 
                   // Delete Data button
                   ElevatedButton(
-                    onPressed: _sdkStatus == 'available' ? () {
-                      // TODO: Implement delete data functionality
-                    } : null,
+                    onPressed: _sdkStatus == 'available'
+                        ? () {
+                            // TODO: Implement delete data functionality
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red[600],
                       foregroundColor: Colors.white,

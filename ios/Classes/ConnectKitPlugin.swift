@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import HealthKit
 
 /// Main entry point for the ConnectKit Flutter plugin on iOS.
 /// This class handles the Flutter engine lifecycle and acts as the Composition Root
@@ -11,6 +12,7 @@ public class ConnectKitPlugin: NSObject, FlutterPlugin {
     // Services and components
     private var hostApi: CKHostApi
     private var permissionService: PermissionService
+    private var writeService: WriteService
 
     // Plugin scope for async operations (iOS equivalent of Android's pluginScope)
     private let pluginQueue = DispatchQueue(
@@ -50,8 +52,20 @@ public class ConnectKitPlugin: NSObject, FlutterPlugin {
         // DEPENDENCY INJECTION: Instantiate services here (Composition Root)
         // This follows Android's pattern where services are created in onAttachedToEngine
         // NOTE: All properties must be initialized before calling super.init() in Swift
+        // Initialize HealthKit store (shared instance)
+        let healthStore = HKHealthStore()
+        
+        // Initialize mappers
+        let recordMapper = RecordMapper(healthStore: healthStore)
+        
+        // Initialize services
         self.permissionService = PermissionService()
-        self.hostApi = CKHostApi(permissionService: self.permissionService)
+        self.writeService = WriteService(healthStore: healthStore, recordMapper: recordMapper)
+        
+        self.hostApi = CKHostApi(
+            permissionService: self.permissionService,
+            writeService: self.writeService
+        )
 
         super.init()
 

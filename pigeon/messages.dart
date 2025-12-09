@@ -68,7 +68,7 @@ class AccessStatusMessage {
 class WriteResultMessage {
   String outcome;
   List<String>? persistedRecordIds;
-  List<Map<String, Object>>? validationFailures;
+  List<Object?>? validationFailures;
 
   WriteResultMessage({
     required this.outcome,

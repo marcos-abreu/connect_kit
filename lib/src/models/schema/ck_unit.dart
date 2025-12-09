@@ -1,6 +1,7 @@
 part 'ck_unit.g.dart';
 
-/// TODO: add documentation
+/// Base unit validation extension
+///
 /// @ck-base-unit: symbol:String
 extension CKUnitValidation on CKUnit {
   /// Validates that the given [value] is valid for this unit.
@@ -16,46 +17,67 @@ extension CKUnitValidation on CKUnit {
   }
 }
 
-/// TODO: add documentation
+/// Mass unit validation extension
+///
 /// @ck-unit: kilogram:kg, gram:g, milligram:mg, pound:lb, ounces:oz
 extension CKMassUnitValidation on CKMassUnit {}
 
-/// TODO: add documentation
+/// Length unit validation extension
+///
 /// @ck-unit: kilometer:km, meter:m, mile:mi , foot:ft, inch:in
 extension CKLengthUnitValidation on CKLengthUnit {}
 
-/// TODO: add documentation
+/// Energy unit validation extension
+///
 /// @ck-unit: kilocalorie:kcal, calorie:cal, kilojoule:kJ, joule:J
 extension CKEnergyUnitValidation on CKEnergyUnit {}
 
-/// TODO: add documentation
+/// Power unit validation extension
+///
 /// @ck-unit: watt:W, kilocaloriesPerDay:kcal/day
 extension CKPowerUnitValidation on CKPowerUnit {}
 
-/// TODO: add documentation
-/// @ck-unit: millimetersOfMercury:mmHg
+/// Pressure unit validation extension
+///
+/// @ck-unit: millimetersOfMercury:mmHg, decibelPressure:dBA
 extension CKPressureUnitValidation on CKPressureUnit {}
 
-/// TODO: add documentation
+/// Temperature unit validation extension
+///
 /// @ck-unit: celsius:C, fahrenheit:F
 extension CKTemperatureUnitValidation on CKTemperatureUnit {}
 
-/// TODO: add documentation
+/// Frequency unit validation extension
+///
 /// @ck-unit: hertz:Hz
 extension CKFrequencyUnitValidation on CKFrequencyUnit {}
 
-/// TODO: add documentation
+/// Velocity unit validation extension
+///
 /// @ck-unit: metersPerSecond:m/s, kilometersPerHour:kph, milesPerHour:mph
 extension CKVelocityUnitValidation on CKVelocityUnit {}
 
-/// TODO: add documentation
+/// Volume unit validation extension
+///
 /// @ck-unit: liter:L, milliliter:mL, fluidOunceUS:fl. oz
 extension CKVolumeUnitValidation on CKVolumeUnit {}
 
-/// TODO: add documentation
+/// Scalar unit validation extension
+///
 /// @ck-unit: count:count, percent:%
 extension CKScalarUnitValidation on CKScalarUnit {}
 
-/// TODO: add documentation
+/// Blood glucose unit validation extension
+///
 /// @ck-unit: millimolesPerLiter:mmol/L, milligramsPerDeciliter:mg/dL
 extension CKBloodGlucoseUnitValidation on CKBloodGlucoseUnit {}
+
+/// Time unit validation extension
+///
+/// @ck-unit: second:s, minute:m, hour:h, day:d
+extension CKTimeUnitValidation on CKTimeUnit {}
+
+/// Compound unit validation extension
+///
+/// @ck-unit: beatsPerMin:bpm
+extension CKCompoundUnitValidation on CKCompoundUnit {}

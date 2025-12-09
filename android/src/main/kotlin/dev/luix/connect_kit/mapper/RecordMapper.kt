@@ -100,8 +100,10 @@ class RecordMapper(
             CKConstants.RECORD_KIND_NUTRITION ->
                 listOf(nutritionMapper.decode(map)).toResult()
 
-            CKConstants.RECORD_KIND_SLEEP_SESSION ->
-                listOf(sleepSessionMapper.decode(map)).toResult()
+            CKConstants.RECORD_KIND_SLEEP_SESSION -> {
+                val (record, failures) = sleepSessionMapper.decode(map)
+                listOf(record).toResult(failures)
+            }
 
             // iOS-only record kinds - throw clear error
             CKConstants.RECORD_KIND_AUDIOGRAM -> throw UnsupportedKindException(

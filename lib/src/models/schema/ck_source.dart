@@ -12,67 +12,87 @@ class CKSource {
   final CKDevice? device;
 
   /// Your app's unique identifier for this record
-  /// Used for sync and upsert operations (Android only)
+  /// Use this ID to uniquely identify objects in your application
+  ///
+  /// This lets you maintain your own refrence to a record, for server syncs
+  /// and later manipulations
+  final String? appRecordUUID;
+
+  /// Health SDK (Health Connect / HealthKit) unique id for this record
+  /// When reading: the Health SDK will give you the id
+  /// When writing: add this with incremented sdkVersion to upsert (update)
+  ///               for new items don't inform
   ///
   /// **Android:** Enables upsert - if record with this ID exists and version
-  /// is higher, it gets updated; otherwise new record created
-  ///
-  /// **iOS:** Can be stored in metadata for your own tracking,
-  /// but iOS doesn't support upsert natively
-  final String? clientRecordId;
+  ///              is higher, it gets updated; otherwise new record created
+  /// **iOS:**     Can be stored in metadata for your own tracking,
+  ///              but need to confirm if iOS support upsert natively
+  final String? sdkRecordId;
 
-  /// Version number for this record (Android only)
-  /// Increment to overwrite existing record with same clientRecordId
-  ///
-  /// **iOS:** Can be stored in metadata for your own tracking, but only
-  ///          if it has been written by this plugin
-  final int? clientRecordVersion;
+  /// Health SDK (Health Connect / HealthKit) version number for this record
+  /// When reading: the Health SDK will give you the latest version
+  /// When writing: increment to overwrite existing record with same sdkRecordId
+  ///               for new items don't inform
+  final int? sdkRecordVersion;
 
-  /// TODO: add documentation
+  /// Source constructor
+  /// parameters:
+  /// - recordingMethod: How this data was recorded (required for Android)
+  /// - device: Device that recorded the data (optional for manual, required for auto/active)
+  /// - appRecordUUID: Your app's unique identifier for this record
+  /// - sdkRecordId: Health SDK (Health Connect / HealthKit) unique id for this record
+  /// - sdkRecordVersion: Health SDK (Health Connect / HealthKit) version number for this record
   const CKSource({
     required this.recordingMethod,
     this.device,
-    this.clientRecordId,
-    this.clientRecordVersion,
+    this.appRecordUUID,
+    this.sdkRecordId,
+    this.sdkRecordVersion,
   });
 
   /// Create source for manually entered data
   factory CKSource.manualEntry({
     CKDevice? device,
-    String? clientRecordId,
-    int? clientRecordVersion,
+    String? appRecordUUID,
+    String? sdkRecordId,
+    int? sdkRecordVersion,
   }) =>
       CKSource(
         recordingMethod: CKRecordingMethod.manualEntry,
         device: device,
-        clientRecordId: clientRecordId,
-        clientRecordVersion: clientRecordVersion,
+        appRecordUUID: appRecordUUID,
+        sdkRecordId: sdkRecordId,
+        sdkRecordVersion: sdkRecordVersion,
       );
 
   /// Create source for user-initiated recording (e.g., workout)
   factory CKSource.activelyRecorded({
     required CKDevice device, // Required for Android
-    String? clientRecordId,
-    int? clientRecordVersion,
+    String? appRecordUUID,
+    String? sdkRecordId,
+    int? sdkRecordVersion,
   }) =>
       CKSource(
         recordingMethod: CKRecordingMethod.activelyRecorded,
         device: device,
-        clientRecordId: clientRecordId,
-        clientRecordVersion: clientRecordVersion,
+        appRecordUUID: appRecordUUID,
+        sdkRecordId: sdkRecordId,
+        sdkRecordVersion: sdkRecordVersion,
       );
 
   /// Create source for automatic/passive recording (e.g., step counter)
   factory CKSource.automaticallyRecorded({
     required CKDevice device, // Required for Android
-    String? clientRecordId,
-    int? clientRecordVersion,
+    String? appRecordUUID,
+    String? sdkRecordId,
+    int? sdkRecordVersion,
   }) =>
       CKSource(
         recordingMethod: CKRecordingMethod.automaticallyRecorded,
         device: device,
-        clientRecordId: clientRecordId,
-        clientRecordVersion: clientRecordVersion,
+        appRecordUUID: appRecordUUID,
+        sdkRecordId: sdkRecordId,
+        sdkRecordVersion: sdkRecordVersion,
       );
 }
 

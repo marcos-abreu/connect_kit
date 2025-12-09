@@ -52,7 +52,8 @@ extension WriteResultMessageMapping on WriteResultMessage {
   CKWriteResult parseWriteResultResponse() {
     List<RecordFailure>? parsedFailures;
     if (validationFailures != null && validationFailures!.isNotEmpty) {
-      parsedFailures = validationFailures!.map((failureMap) {
+      parsedFailures = validationFailures!.map((failureObj) {
+        final failureMap = failureObj as Map<Object?, Object?>;
         return RecordFailure(
           indexPath: (failureMap['indexPath'] as List?)
                   ?.map((e) => e as int)

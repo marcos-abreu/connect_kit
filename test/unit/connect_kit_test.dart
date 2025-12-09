@@ -4,6 +4,9 @@ import 'package:connect_kit/src/models/ck_sdk_status.dart';
 import 'package:connect_kit/src/models/schema/ck_type.dart';
 import 'package:connect_kit/src/models/ck_access_type.dart';
 import 'package:connect_kit/src/models/ck_access_status.dart';
+import 'package:connect_kit/src/models/ck_write_result.dart';
+import 'package:connect_kit/src/models/records/ck_record.dart';
+import 'package:connect_kit/src/models/schema/ck_source.dart';
 
 // Class under test
 import 'package:connect_kit/connect_kit.dart';
@@ -11,19 +14,24 @@ import 'package:connect_kit/connect_kit.dart';
 // Class to mock
 import 'package:connect_kit/src/services/operations_service.dart';
 import 'package:connect_kit/src/services/permission_service.dart';
+import 'package:connect_kit/src/services/write_service.dart';
 
 class MockOperationsService extends Mock implements OperationsService {}
 
 class MockPermissionService extends Mock implements PermissionService {}
 
+class MockWriteService extends Mock implements WriteService {}
+
 void main() {
   late ConnectKit testConnectKit;
   late MockOperationsService mockOperationsService;
-  late PermissionService mockPermissionService;
+  late MockPermissionService mockPermissionService;
+  late MockWriteService mockWriteService;
 
   setUp(() {
     mockOperationsService = MockOperationsService();
     mockPermissionService = MockPermissionService();
+    mockWriteService = MockWriteService();
 
     // Set up default mock behaviors to return null
     registerFallbackValue(CKSdkStatus.fromString('unknown'));
@@ -33,12 +41,14 @@ void main() {
     testConnectKit = ConnectKit.forTesting(
       operationsService: mockOperationsService,
       permissionService: mockPermissionService,
+      writeService: mockWriteService,
     );
   });
 
   tearDown(() {
     reset(mockOperationsService);
     reset(mockPermissionService);
+    reset(mockWriteService);
   });
 
   group('ConnectKit Instance', () {
@@ -282,6 +292,42 @@ void main() {
         throwsA(isA<Exception>()),
       );
       verify(() => mockPermissionService.openHealthSettings()).called(1);
+    });
+  });
+
+  group('ConnectKit Write Facade', () {
+    test(
+        'writeRecords delegates call to WriteService and returns result',
+        () async {
+      // Arrange
+      final expectedWriteResult = CKWriteResult(
+        outcome: WriteOutcome.completeSuccess,
+        persistedRecordIds: ['record-1', 'record-2'],
+      );
+      when(() => mockWriteService.writeRecords(any()))
+          .thenAnswer((_) async => expectedWriteResult);
+
+      // Act
+      final actualWriteResult = await testConnectKit.writeRecords([]);
+
+      // Assert
+      verify(() => mockWriteService.writeRecords([])).called(1);
+      expect(actualWriteResult, expectedWriteResult);
+    });
+
+    test('writeRecords re-throws exceptions from WriteService',
+        () async {
+      // Arrange
+      final expectedError = Exception('Write service failure');
+      when(() => mockWriteService.writeRecords(any()))
+          .thenThrow(expectedError);
+
+      // Act & Assert
+      expect(
+        () => testConnectKit.writeRecords([]),
+        throwsA(isA<Exception>()),
+      );
+      verify(() => mockWriteService.writeRecords([])).called(1);
     });
   });
 }

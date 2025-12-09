@@ -33,9 +33,8 @@ class CKDataRecord extends CKRecord {
     super.endZoneOffset,
     super.source,
     super.id,
-  })  : assert(startTime.isUtc, 'startTime must be UTC'),
-        assert(endTime.isUtc, 'endTime must be UTC'),
-        assert(
+    super.metadata,
+  }) : assert(
           !startTime.isAfter(endTime),
           'startTime cannot be after endTime',
         ) {
@@ -49,7 +48,8 @@ class CKDataRecord extends CKRecord {
         }
         break;
 
-      case CKValuePattern.label || CKValuePattern.none:
+      case CKValuePattern.label:
+      case CKValuePattern.none:
         if (data is! CKLabelValue) {
           throw ArgumentError(
               'Type "${type.name}" has label/none pattern and requires CKLabelValue, '
@@ -79,6 +79,27 @@ class CKDataRecord extends CKRecord {
               'Type "${type.name}" has multiple pattern and requires CKMultipleValue, '
               'but received ${data.runtimeType}.');
         }
+        // metadata must be provided because of mainProperty
+        if (metadata == null) {
+          throw ArgumentError(
+            'Type "${type.name}" has multiple pattern but metadata is missing.',
+          );
+        }
+
+        final main = metadata!['mainProperty'] as String?;
+
+        if (main == null || main.isEmpty) {
+          throw ArgumentError(
+            'Type "${type.name}" has multiple pattern but metadata.mainProperty is missing or empty.',
+          );
+        }
+
+        if (!data.value.containsKey(main)) {
+          throw ArgumentError(
+            'Type "${type.name}" has multiple pattern but data.value does not contain the mainProperty "$main".',
+          );
+        }
+
         break;
     }
 
@@ -86,15 +107,6 @@ class CKDataRecord extends CKRecord {
     if (data is CKSamplesValue) {
       if (data.value.isEmpty) {
         throw ArgumentError('CKSamplesValue cannot be empty');
-      }
-      // Validate all samples have the same unit as the parent
-      final parentUnit = data.unit;
-      for (final sample in data.value) {
-        if (sample.value.unit != parentUnit) {
-          throw ArgumentError(
-            'All samples must have the same unit as the parent CKSamplesValue',
-          );
-        }
       }
     }
 
@@ -114,6 +126,7 @@ class CKDataRecord extends CKRecord {
     required DateTime time,
     Duration? zoneOffset,
     required CKSource source,
+    Map<String, Object>? metadata,
   }) =>
       CKDataRecord(
         type: type,
@@ -123,6 +136,7 @@ class CKDataRecord extends CKRecord {
         startZoneOffset: zoneOffset,
         endZoneOffset: zoneOffset,
         source: source,
+        metadata: metadata,
       );
 
   /// Create interval data record (steps over 15 minutes)
@@ -134,6 +148,7 @@ class CKDataRecord extends CKRecord {
     Duration? startZoneOffset,
     Duration? endZoneOffset,
     required CKSource source,
+    Map<String, Object>? metadata,
   }) =>
       CKDataRecord(
         type: type,
@@ -143,6 +158,7 @@ class CKDataRecord extends CKRecord {
         startZoneOffset: startZoneOffset,
         endZoneOffset: endZoneOffset,
         source: source,
+        metadata: metadata,
       );
 }
 

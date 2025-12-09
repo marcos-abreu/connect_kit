@@ -54,14 +54,17 @@ class BloodPressureMapper(
      * @throws IllegalArgumentException if required fields are missing or have invalid formats.
      */
     fun decode(map: Map<String, Any?>): BloodPressureRecord {
-        // Parse timestamps
-        val timeString = RecordMapperUtils.getRequiredString(map, "time", RECORD_KIND)
-        val time = RecordMapperUtils.parseInstant(timeString, "time", RECORD_KIND)
+        // === Core times ===
+        val timeRange = RecordMapperUtils.extractTimeRange(map, RECORD_KIND)
 
-        // Parse zone offsets
-        val zoneOffsetSeconds = RecordMapperUtils.getOptionalInt(map, "zoneOffsetSeconds")
-        val zoneOffset = zoneOffsetSeconds?.let(RecordMapperUtils::parseZoneOffset)
-
+        // Check data integrity
+        if (timeRange.startTime != timeRange.endTime) {
+            CKLogger.w(
+                tag = TAG,
+                message =
+                    "Blood pressure has different start/end times. Using start time for both."
+            )
+        }
 
         // Extract systolic/diastolic
         val systolicMap = RecordMapperUtils.getRequiredMap(map, "systolic", "bloodPressure")
@@ -92,8 +95,8 @@ class BloodPressureMapper(
         val metadata = RecordMapperUtils.buildMetadata(sourceMap)
 
         return BloodPressureRecord(
-            time = time,
-            zoneOffset = zoneOffset,
+            time = timeRange.startTime,
+            zoneOffset = timeRange.startZoneOffset,
             systolic = RecordMapperUtils.convertToPressure(systolicValue, systolicUnit, RECORD_KIND),
             diastolic = RecordMapperUtils.convertToPressure(diastolicValue, diastolicUnit, RECORD_KIND),
             bodyPosition = bodyPosition,
@@ -101,16 +104,4 @@ class BloodPressureMapper(
             metadata = metadata
         )
     }
-
-    /**
-     * Encodes a [BloodPressureRecord] into a map for Pigeon transmission.
-     *
-     * (To be implemented)
-     *
-     * @param record The [BloodPressureRecord] instance.
-     * @return A map suitable for encoding and sending to Dart.
-     */
-    // fun encode(record: BloodPressureRecord): Map<String, Any> {
-    //     TODO("Implement encoding")
-    // }
 }

@@ -29,7 +29,7 @@ class CKEcg extends CKRecord {
   final List<CKEcgVoltageMeasurement>? voltageMeasurements;
 
   /// TODO: add documentation
-  const CKEcg({
+  CKEcg({
     super.id,
     required super.startTime,
     required super.endTime,
@@ -40,6 +40,7 @@ class CKEcg extends CKRecord {
     this.averageHeartRate,
     this.symptoms = const [],
     this.voltageMeasurements,
+    super.metadata,
   });
 
   /// Duration of the ECG recording

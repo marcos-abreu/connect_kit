@@ -26,6 +26,27 @@ void main() {
         expect(CKType.steps.hashCode, equals(CKType.steps.hashCode));
         expect(CKType.height.hashCode, isNot(equals(CKType.weight.hashCode)));
       });
+
+      test('name getter returns correct type name', () {
+        expect(CKType.steps.name, 'steps');
+        expect(CKType.height.name, 'height');
+        expect(CKType.heartRate.name, 'heartRate');
+        expect(CKType.bloodPressure.name, 'bloodPressure');
+      });
+
+      test('pattern getter returns correct value pattern', () {
+        expect(CKType.steps.pattern, CKValuePattern.quantity);
+        expect(CKType.heartRate.pattern, CKValuePattern.samples);
+        expect(CKType.bloodPressure.pattern, CKValuePattern.multiple);
+        expect(CKType.speed.pattern, CKValuePattern.samples);
+      });
+
+      test('timePattern getter returns correct time pattern', () {
+        expect(CKType.steps.timePattern, CKTimePattern.interval);
+        expect(CKType.height.timePattern, CKTimePattern.instantaneous);
+        expect(CKType.bloodPressure.timePattern, CKTimePattern.instantaneous);
+        expect(CKType.workout.timePattern, CKTimePattern.interval);
+      });
     });
 
     group('simple types', () {
@@ -62,7 +83,7 @@ void main() {
 
       group('nutrition', () {
         test('has correct components', () {
-          expect(CKType.nutrition.defaultComponents.length, 4);
+          expect(CKType.nutrition.defaultComponents.length, 6);
           expect(CKType.nutrition.defaultComponents,
               contains(CKType.nutrition.energy));
           expect(CKType.nutrition.defaultComponents,
@@ -71,6 +92,10 @@ void main() {
               contains(CKType.nutrition.carbs));
           expect(CKType.nutrition.defaultComponents,
               contains(CKType.nutrition.fat));
+          expect(CKType.nutrition.defaultComponents,
+              contains(CKType.nutrition.fiber));
+          expect(CKType.nutrition.defaultComponents,
+              contains(CKType.nutrition.sugar));
         });
 
         test('component types have correct names', () {
@@ -83,9 +108,11 @@ void main() {
 
       group('workout', () {
         test('has correct components', () {
-          expect(CKType.workout.defaultComponents.length, 2);
-          // workout includes itself + distance
+          expect(CKType.workout.defaultComponents.length, 3);
+          // workout includes itself + energy + distance
           expect(CKType.workout.defaultComponents, contains(CKType.workout));
+          expect(CKType.workout.defaultComponents,
+              contains(CKType.workout.energy));
           expect(CKType.workout.defaultComponents,
               contains(CKType.workout.distance));
         });
@@ -94,6 +121,36 @@ void main() {
           expect(CKType.workout.distance.toString(), 'workout.distance');
           expect(CKType.workout.heartRate.toString(), 'workout.heartRate');
           expect(CKType.workout.energy.toString(), 'workout.energy');
+        });
+      });
+
+      group('sleepSession', () {
+        test('all getter returns all sleep session stages', () {
+          final allStages = CKType.sleepSession.all;
+          expect(allStages, hasLength(7));
+          expect(allStages, contains(CKType.sleepSession.inBed));
+          expect(allStages, contains(CKType.sleepSession.asleep));
+          expect(allStages, contains(CKType.sleepSession.awake));
+          expect(allStages, contains(CKType.sleepSession.light));
+          expect(allStages, contains(CKType.sleepSession.deep));
+          expect(allStages, contains(CKType.sleepSession.rem));
+          expect(allStages, contains(CKType.sleepSession.outOfBed));
+        });
+
+        test('defaultComponents returns all sleep stages', () {
+          final defaultComponents = CKType.sleepSession.defaultComponents;
+          expect(defaultComponents, equals(CKType.sleepSession.all));
+          expect(defaultComponents, hasLength(7));
+        });
+
+        test('all getter contains expected stage types', () {
+          expect(CKType.sleepSession.inBed.timePattern, CKTimePattern.interval);
+          expect(CKType.sleepSession.asleep.timePattern, CKTimePattern.interval);
+          expect(CKType.sleepSession.awake.timePattern, CKTimePattern.interval);
+          expect(CKType.sleepSession.light.timePattern, CKTimePattern.interval);
+          expect(CKType.sleepSession.deep.timePattern, CKTimePattern.interval);
+          expect(CKType.sleepSession.rem.timePattern, CKTimePattern.interval);
+          expect(CKType.sleepSession.outOfBed.timePattern, CKTimePattern.interval);
         });
       });
     });

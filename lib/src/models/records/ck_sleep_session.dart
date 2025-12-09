@@ -18,13 +18,14 @@ class CKSleepSession extends CKRecord {
   final List<CKSleepStage> stages;
 
   /// TODO: add documentation
-  const CKSleepSession({
+  CKSleepSession({
     super.id,
     required super.startTime,
     required super.endTime,
     super.startZoneOffset,
     super.endZoneOffset,
     super.source,
+    super.metadata,
     this.title,
     this.notes,
     required this.stages,
@@ -73,6 +74,7 @@ class CKSleepSession extends CKRecord {
     required DateTime endTime,
     Duration? zoneOffset,
     required CKSource source,
+    Map<String, Object>? metadata,
     String? title,
     String? notes,
   }) {
@@ -82,6 +84,7 @@ class CKSleepSession extends CKRecord {
       startZoneOffset: zoneOffset,
       endZoneOffset: zoneOffset,
       source: source,
+      metadata: metadata,
       title: title,
       notes: notes,
       stages: [
@@ -104,6 +107,7 @@ class CKSleepSession extends CKRecord {
     Duration? endZoneOffset,
     required List<CKSleepStage> stages,
     required CKSource source,
+    Map<String, Object>? metadata,
     String? title,
     String? notes,
   }) {
@@ -113,6 +117,7 @@ class CKSleepSession extends CKRecord {
       startZoneOffset: startZoneOffset,
       endZoneOffset: endZoneOffset,
       source: source,
+      metadata: metadata,
       title: title,
       notes: notes,
       stages: stages,

@@ -56,6 +56,7 @@ object CKConstants {
     const val MAPPER_ERROR_UNSUPPORTED_TYPE = "UnsupportedType"
     const val MAPPER_ERROR_UNEXPECTED = "UnexpectedError"
     const val MAPPER_ERROR_UNKNOWN = "Unknown"
+    const val MAPPER_ERROR_INVALID_FORMAT = "InvalidFormat"
     const val MAPPER_ERROR_DURING_SESSION_DECODE = "DuringSessionDecodeError"
     const val MAPPER_ERROR_DURING_SESSION_INVALID_TYPE = "InvalidDuringSessionType"
 

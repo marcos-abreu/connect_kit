@@ -25,13 +25,14 @@ class CKWorkout extends CKRecord {
   final List<CKDataRecord>? duringSession;
 
   /// TODO: add documentation
-  const CKWorkout({
+  CKWorkout({
     super.id,
     required super.startTime,
     required super.endTime,
     super.startZoneOffset,
     super.endZoneOffset,
     super.source,
+    super.metadata,
     required this.activityType,
     this.title,
     this.duringSession,

@@ -44,10 +44,9 @@ extension CKTypeMapping on Set<CKType> {
     return expanded;
   }
 
-  // TODO: use .name instead of .toString (for consistency)
   /// Maps Record to platform channel request format
   List<String> mapToRequest() {
-    return map((type) => type.toString()).toList();
+    return map((type) => type.name()).toList();
   }
 }
 
@@ -70,7 +69,7 @@ extension DataAccessStatus on Map<CKType, Set<CKAccessType>> {
       final accessTypeStrings = entry.value.map((t) => t.name).toList();
 
       for (final expandedType in expandedTypes) {
-        result[expandedType.toString()] = accessTypeStrings;
+        result[expandedType.name()] = accessTypeStrings;
       }
     }
 
@@ -82,9 +81,9 @@ extension DataAccessStatus on Map<CKType, Set<CKAccessType>> {
 
 /// Extension for enhancing CKDevice to handle requests to native platforms
 extension CKDeviceMapping on CKDevice {
-  /// Maps Record to platform channel request format
+  /// Maps CKDevice to platform channel request format
   Map<String, Object?> mapToRequest() => {
-        if (manufacturer != null) 'manufacturer': manufacturer as Object,
+        if (manufacturer != null) 'manufacturer': manufacturer,
         if (model != null) 'model': model,
         'type': type.name,
         if (hardwareVersion != null) 'hardwareVersion': hardwareVersion,
@@ -94,18 +93,19 @@ extension CKDeviceMapping on CKDevice {
 
 /// Extension for enhancing CKSource to handle requests to native platforms
 extension CKSourceMapping on CKSource {
-  /// Maps Record to platform channel request format
+  /// Maps CKSource to platform channel request format
   Map<String, Object?> mapToRequest() => {
         'recordingMethod': recordingMethod.name,
         if (device != null) 'device': device!.mapToRequest(),
-        if (clientRecordId != null) 'clientRecordId': clientRecordId,
-        if (clientRecordVersion != null)
-          'clientRecordVersion': clientRecordVersion,
+        if (appRecordUUID != null) 'appRecordUUID': appRecordUUID,
+        if (sdkRecordId != null) 'sdkRecordId': sdkRecordId,
+        if (sdkRecordVersion != null) 'sdkRecordVersion': sdkRecordVersion,
       };
 }
 
 /// === Schema: Value Mapping ===
-/// Extension CKValue native serialization
+
+/// Extension for enhancing CKValue to handle requests to native platforms
 extension CKValueMapping on CKValue {
   /// Maps CKValue to platform channel request format
   Map<String, Object?> mapToRequest() {
@@ -119,7 +119,7 @@ extension CKValueMapping on CKValue {
   }
 }
 
-/// Extension CKLabelValue native serialization
+/// Extension for enhancing CKLabelValue to handle requests to native platforms
 extension CKLabelValueMapping on CKLabelValue {
   /// Maps CKLabelValue to platform channel format
   Map<String, Object?> mapToRequest() => {
@@ -129,7 +129,7 @@ extension CKLabelValueMapping on CKLabelValue {
       };
 }
 
-/// Extension CKQuantityValue native serialization
+/// Extension for enhancing CKQuantityValue to handle requests to native platforms
 extension CKQuantityValueMapping on CKQuantityValue {
   /// Maps CKQuantityValue to platform channel format
   Map<String, Object?> mapToRequest() => {
@@ -139,17 +139,18 @@ extension CKQuantityValueMapping on CKQuantityValue {
       };
 }
 
-/// Extension CKCategoryValue native serialization
+/// Extension for enhancing CKCategoryValue to handle requests to native platforms
 extension CKCategoryValueMapping on CKCategoryValue {
   /// Maps CKCategoryValue to platform channel format
   Map<String, Object?> mapToRequest() => {
         'valuePattern': 'category',
         'value': value.name, // enum name
         // no unit for category values
+        'categoryName': value.runtimeType.toString(),
       };
 }
 
-/// Extension CKMultipleValue native serialization
+/// Extension for enhancing CKMultipleValue to handle requests to native platforms
 extension CKMultipleValueMapping on CKMultipleValue {
   /// Maps CKMultipleValue to platform channel format
   Map<String, Object?> mapToRequest() => {
@@ -162,7 +163,7 @@ extension CKMultipleValueMapping on CKMultipleValue {
       };
 }
 
-/// Extension for CKSamplesValue native serialization
+/// Extension for enhancing CKSamplesValue to handle requests to native platforms
 extension CKSamplesValueMapping on CKSamplesValue {
   /// Maps CKSamplesValue to platform channel format
   Map<String, Object?> mapToRequest() => {
@@ -172,7 +173,7 @@ extension CKSamplesValueMapping on CKSamplesValue {
       };
 }
 
-/// Extension for CKSample serialization
+/// Extension for enhancing CKSample to handle requests to native platforms
 extension CKSampleMapping on CKSample {
   /// Maps CKSample to platform channel format
   Map<String, Object?> mapToRequest() => {
@@ -181,18 +182,30 @@ extension CKSampleMapping on CKSample {
       };
 }
 
-/// === Base Record Mapping ===
+/// === Record Mapping ===
+
+/// Extension for enhancing CKRecord to handle requests to native platforms
 /// NOTE: Keep it in sync with record model
 extension CKRecordMapping on CKRecord {
-  /// Maps Record to platform channel request format
+  /// Maps CKRecord to platform channel request format
   Map<String, Object?> mapToRequest() {
-    return {
-      if (id != null) 'id': id,
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
-      'startZoneOffsetSeconds': startZoneOffset.inSeconds,
-      'endZoneOffsetSeconds': endZoneOffset.inSeconds,
-      if (source != null) 'source': source!.mapToRequest(),
+    return switch (this) {
+      CKDataRecord() => (this as CKDataRecord).mapToRequest(),
+      CKWorkout() => (this as CKWorkout).mapToRequest(),
+      CKSleepSession() => (this as CKSleepSession).mapToRequest(),
+      CKNutrition() => (this as CKNutrition).mapToRequest(),
+      CKBloodPressure() => (this as CKBloodPressure).mapToRequest(),
+      CKAudiogram() => (this as CKAudiogram).mapToRequest(),
+      CKEcg() => (this as CKEcg).mapToRequest(),
+      _ => {
+          if (id != null) 'id': id,
+          'startTime': startTime.millisecondsSinceEpoch,
+          'endTime': endTime.millisecondsSinceEpoch,
+          'startZoneOffsetSeconds': startZoneOffset.inSeconds,
+          'endZoneOffsetSeconds': endZoneOffset.inSeconds,
+          if (source != null) 'source': source!.mapToRequest(),
+          if (metadata != null) 'metadata': metadata,
+        },
     };
   }
 }
@@ -207,11 +220,12 @@ extension CKDataRecordMapping on CKDataRecord {
             CKConstants.recordKindDataRecord, // Injected Differentiator
         'type': type.name,
         'data': data.mapToRequest(),
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
+        'startTime': startTime.millisecondsSinceEpoch,
+        'endTime': endTime.millisecondsSinceEpoch,
         'startZoneOffsetSeconds': startZoneOffset.inSeconds,
         'endZoneOffsetSeconds': endZoneOffset.inSeconds,
         if (source != null) 'source': source!.mapToRequest(),
+        if (metadata != null) 'metadata': metadata,
       };
 }
 
@@ -223,11 +237,12 @@ extension CKAudiogramMapping on CKAudiogram {
         if (id != null) 'id': id,
         'recordKind':
             CKConstants.recordKindAudiogram, // Injected Differentiator
-        'time': startTime.toIso8601String(),
+        'time': startTime.millisecondsSinceEpoch,
         'zoneOffsetSeconds': startZoneOffset.inSeconds,
         'sensitivityPoints':
             sensitivityPoints.map((p) => p.mapToRequest()).toList(),
         if (source != null) 'source': source!.mapToRequest(),
+        if (metadata != null) 'metadata': metadata,
       };
 }
 
@@ -254,12 +269,13 @@ extension CKBloodPressureMapping on CKBloodPressure {
             CKConstants.recordKindBloodPressure, // Injected Differentiator
         'systolic': systolic.mapToRequest(),
         'diastolic': diastolic.mapToRequest(),
-        'time': startTime.toIso8601String(),
+        'time': startTime.millisecondsSinceEpoch,
         'zoneOffsetSeconds': startZoneOffset.inSeconds,
         if (bodyPosition != null) 'bodyPosition': bodyPosition!.name,
         if (measurementLocation != null)
           'measurementLocation': measurementLocation!.name,
         if (source != null) 'source': source!.mapToRequest(),
+        if (metadata != null) 'metadata': metadata,
       };
 }
 
@@ -272,8 +288,8 @@ extension CKEcgMapping on CKEcg {
         'recordKind': CKConstants.recordKindEcg, // Injected Differentiator
         'classification': classification.name,
         if (averageHeartRate != null) 'averageHeartRate': averageHeartRate,
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
+        'startTime': startTime.millisecondsSinceEpoch,
+        'endTime': endTime.millisecondsSinceEpoch,
         'startZoneOffsetSeconds': startZoneOffset.inSeconds,
         'endZoneOffsetSeconds': endZoneOffset.inSeconds,
         'symptoms': symptoms.map((s) => s.name).toList(),
@@ -281,6 +297,7 @@ extension CKEcgMapping on CKEcg {
           'voltageMeasurements':
               voltageMeasurements!.map((v) => v.mapToRequest()).toList(),
         if (source != null) 'source': source!.mapToRequest(),
+        if (metadata != null) 'metadata': metadata,
       };
 }
 
@@ -304,16 +321,18 @@ extension CKNutritionMapping on CKNutrition {
       'recordKind': CKConstants.recordKindNutrition, // Injected Differentiator
       if (name != null) 'name': name,
       if (mealType != null) 'mealType': mealType!.name,
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
+      'startTime': startTime.millisecondsSinceEpoch,
+      'endTime': endTime.millisecondsSinceEpoch,
       'startZoneOffsetSeconds': startZoneOffset.inSeconds,
       'endZoneOffsetSeconds': endZoneOffset.inSeconds,
       if (source != null) 'source': source!.mapToRequest(),
+      if (metadata != null) 'metadata': metadata,
     };
 
-    // Add all non-null nutrients
+    // Add all non-null nutrients to a dedicated map
+    final nutrients = <String, Object?>{};
     void addNutrient(String key, CKQuantityValue? value) {
-      if (value != null) map[key] = value.mapToRequest();
+      if (value != null) nutrients[key] = value.mapToRequest();
     }
 
     // === NOTE: Keep it in sync with the nutrition values in ck_type.dart Schema ===
@@ -357,6 +376,10 @@ extension CKNutritionMapping on CKNutrition {
     addNutrient('biotin', biotin);
     addNutrient('pantothenicAcid', pantothenicAcid);
 
+    if (nutrients.isNotEmpty) {
+      map['nutrients'] = nutrients;
+    }
+
     return map;
   }
 }
@@ -371,12 +394,13 @@ extension CKSleepSessionMapping on CKSleepSession {
             CKConstants.recordKindSleepSession, // Injected Differentiator
         if (title != null) 'title': title,
         if (notes != null) 'notes': notes,
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
+        'startTime': startTime.millisecondsSinceEpoch,
+        'endTime': endTime.millisecondsSinceEpoch,
         'startZoneOffsetSeconds': startZoneOffset.inSeconds,
         'endZoneOffsetSeconds': endZoneOffset.inSeconds,
         'stages': stages.map((s) => s.mapToRequest()).toList(),
         if (source != null) 'source': source!.mapToRequest(),
+        if (metadata != null) 'metadata': metadata,
       };
 }
 
@@ -385,8 +409,8 @@ extension CKSleepSessionMapping on CKSleepSession {
 extension CKSleepStageMapping on CKSleepStage {
   /// Maps Sleep tage to platform channel request format
   Map<String, Object?> mapToRequest() => {
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
+        'startTime': startTime.millisecondsSinceEpoch,
+        'endTime': endTime.millisecondsSinceEpoch,
         'stage': stage.name,
       };
 }
@@ -400,11 +424,12 @@ extension CKWorkoutMapping on CKWorkout {
         'recordKind': CKConstants.recordKindWorkout, // Injected Differentiator
         'activityType': activityType.name,
         if (title != null) 'title': title,
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
+        'startTime': startTime.millisecondsSinceEpoch,
+        'endTime': endTime.millisecondsSinceEpoch,
         'startZoneOffsetSeconds': startZoneOffset.inSeconds,
         'endZoneOffsetSeconds': endZoneOffset.inSeconds,
         if (source != null) 'source': source!.mapToRequest(),
+        if (metadata != null) 'metadata': metadata,
         if (duringSession != null)
           'duringSession': duringSession!.map((r) => r.mapToRequest()).toList(),
       };

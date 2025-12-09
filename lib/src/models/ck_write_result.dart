@@ -9,7 +9,7 @@ class CKWriteResult {
   /// Summary of the write operation outcome
   final WriteOutcome outcome;
 
-  /// Records that were successfully persisted (Android only / iOS always null)
+  /// Records that were successfully persisted
   final List<String>? persistedRecordIds;
 
   /// Records that failed validation or decoding before persistence
@@ -25,7 +25,7 @@ class CKWriteResult {
   /// Returns `true` if any record failed validation or decoding
   bool get hasValidationFailures => validationFailures?.isNotEmpty ?? false;
 
-  /// Returns `true` if any record was persisted (always `false` on iOS)
+  /// Returns `true` if any record was persisted
   bool get hasPersistedRecords => persistedRecordIds?.isNotEmpty ?? false;
 }
 

@@ -67,13 +67,14 @@ class CKNutrition extends CKRecord {
   final CKQuantityValue? pantothenicAcid; // B5
 
   /// TODO: add documentation
-  const CKNutrition({
+  CKNutrition({
     super.id,
     required super.startTime,
     required super.endTime,
     super.startZoneOffset,
     super.endZoneOffset,
     super.source,
+    super.metadata,
     this.name,
     this.mealType,
     this.energy,
@@ -122,6 +123,7 @@ class CKNutrition extends CKRecord {
     required DateTime time,
     Duration? zoneOffset,
     required CKSource source,
+    Map<String, Object>? metadata,
     String? name,
     CKMealType? mealType,
     CKQuantityValue? energy,
@@ -135,6 +137,7 @@ class CKNutrition extends CKRecord {
       startZoneOffset: zoneOffset,
       endZoneOffset: zoneOffset,
       source: source,
+      metadata: metadata,
       name: name,
       mealType: mealType,
       energy: energy,

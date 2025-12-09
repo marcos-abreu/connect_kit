@@ -24,7 +24,7 @@ class CKBloodPressure extends CKRecord {
   final CKMeasurementLocation? measurementLocation;
 
   /// TODO: add documentation
-  const CKBloodPressure({
+  CKBloodPressure({
     super.id,
     required DateTime time,
     Duration? zoneOffset,
@@ -33,6 +33,7 @@ class CKBloodPressure extends CKRecord {
     required this.diastolic,
     this.bodyPosition,
     this.measurementLocation,
+    super.metadata,
   }) : super(
           startTime: time,
           endTime: time,
@@ -47,6 +48,7 @@ class CKBloodPressure extends CKRecord {
     required DateTime time,
     Duration? zoneOffset,
     required CKSource source,
+    Map<String, Object>? metadata,
     CKBodyPosition? bodyPosition,
     CKMeasurementLocation? measurementLocation,
   }) {
@@ -54,6 +56,7 @@ class CKBloodPressure extends CKRecord {
       time: time,
       zoneOffset: zoneOffset,
       source: source,
+      metadata: metadata,
       systolic: CKQuantityValue(systolic, CKUnit.pressure.millimetersOfMercury),
       diastolic:
           CKQuantityValue(diastolic, CKUnit.pressure.millimetersOfMercury),

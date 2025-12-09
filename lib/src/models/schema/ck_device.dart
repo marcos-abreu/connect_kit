@@ -15,7 +15,13 @@ class CKDevice {
   /// Software/firmware version (iOS only - ignored on Android)
   final String? softwareVersion;
 
-  /// TODO: add documentation
+  /// Device constructor
+  /// parameters:
+  /// - manufacturer: Device manufacturer (e.g., "Apple", "Google", "Fitbit")
+  /// - model: Device model (e.g., "iPhone 14 Pro", "Pixel Watch")
+  /// - type: Device type category (e.g., "phone", "watch", "scale")
+  /// - hardwareVersion: Hardware version (iOS only - ignored on Android)
+  /// - softwareVersion: Software/firmware version (iOS only - ignored on Android)
   const CKDevice({
     this.manufacturer,
     this.model,
@@ -60,27 +66,27 @@ class CKDevice {
 
 /// Device type categories
 enum CKDeviceType {
-  /// TODO: add documentation
+  /// Unknown or unrecognized device type
   unknown,
 
-  /// TODO: add documentation
+  /// Smartphone or tablet device
   phone,
 
-  /// TODO: add documentation
+  /// Smartwatch or fitness tracker (but not fitness band)
   watch,
 
-  /// TODO: add documentation
+  /// Digital weight scale
   scale,
 
-  /// TODO: add documentation
+  /// Smart ring device
   ring,
 
-  /// TODO: add documentation
+  /// Heart rate monitoring chest strap
   chestStrap,
 
-  /// TODO: add documentation
+  /// Fitness band or activity tracker
   fitnessBand,
 
-  /// TODO: add documentation
+  /// Head-mounted display or headphones
   headMounted,
 }

@@ -151,6 +151,7 @@ class WriteService(
                 val response = healthConnectClient.insertRecords(decodedRecords)
                 response.recordIdsList
             } catch (error: Exception) {
+                // TODO: add error message into RecordMapperFailure
                 allFailures.add(
                     RecordMapperFailure(
                         indexPath = listOf(CKConstants.ERROR_NO_INDEX_PATH),

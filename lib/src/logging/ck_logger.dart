@@ -137,7 +137,7 @@ class CKLogger {
     // Structured Format
     final output = '$_pluginTag[$tag][${level.name.toUpperCase()}] $message';
 
-    // Using _logExecutor as an interface whih by default points to dart:developer.log
+    // Using _logExecutor as an interface which by default points to dart:developer.log
     // for zero-dependency structured logging
     _logExecutor(
       output,

@@ -43,7 +43,6 @@ class NutritionMapper(
     companion object {
         private const val TAG = CKConstants.TAG_NUTRITION_MAPPER
         private const val RECORD_KIND = CKConstants.RECORD_KIND_NUTRITION
-        private const val TYPE = "Nutrition"
     }
 
     /**
@@ -63,17 +62,7 @@ class NutritionMapper(
      */
     fun decode(map: Map<String, Any?>): NutritionRecord {
         // === Core times ===
-        val startTimeStr = RecordMapperUtils.getRequiredString(map, "startTime", RECORD_KIND)
-        val endTimeStr = RecordMapperUtils.getRequiredString(map, "endTime", RECORD_KIND)
-        val startTime = RecordMapperUtils.parseInstant(startTimeStr, "startTime", RECORD_KIND)
-        val endTime = RecordMapperUtils.parseInstant(endTimeStr, "endTime", RECORD_KIND)
-        RecordMapperUtils.validateTimeOrder(startTime, endTime, RECORD_KIND)
-
-        // === Zone offsets ===
-        val startOffsetSeconds = RecordMapperUtils.getOptionalInt(map, "startZoneOffsetSeconds")
-        val endOffsetSeconds = RecordMapperUtils.getOptionalInt(map, "endZoneOffsetSeconds")
-        val startZoneOffset = startOffsetSeconds?.let(RecordMapperUtils::parseZoneOffset)
-        val endZoneOffset = endOffsetSeconds?.let(RecordMapperUtils::parseZoneOffset)
+        val timeRange = RecordMapperUtils.extractTimeRange(map, RECORD_KIND)
 
         // === Basic attributes ===
         val name = RecordMapperUtils.getOptionalString(map, "name")
@@ -83,8 +72,10 @@ class NutritionMapper(
         } ?: MealType.MEAL_TYPE_UNKNOWN
 
         // === Nutrients ===
+        val nutrientsMap = RecordMapperUtils.getOptionalMap(map, "nutrients") ?: emptyMap()
+
         fun massField(key: String): Mass? {
-            val nutrientMap = RecordMapperUtils.getOptionalMap(map, key) ?: return null
+            val nutrientMap = RecordMapperUtils.getOptionalMap(nutrientsMap, key) ?: return null
             val value = RecordMapperUtils.getOptionalDouble(nutrientMap, "value")
                 ?: return null
             val unit = nutrientMap["unit"] as? String
@@ -92,7 +83,7 @@ class NutritionMapper(
         }
 
         fun energyField(key: String): Energy? {
-            val energyMap = RecordMapperUtils.getOptionalMap(map, key) ?: return null
+            val energyMap = RecordMapperUtils.getOptionalMap(nutrientsMap, key) ?: return null
             val value = RecordMapperUtils.getOptionalDouble(energyMap, "value")
                 ?: return null
             val unit = energyMap["unit"] as? String
@@ -107,10 +98,10 @@ class NutritionMapper(
         return NutritionRecord(
             name = name,
             mealType = mealType,
-            startTime = startTime,
-            endTime = endTime,
-            startZoneOffset = startZoneOffset,
-            endZoneOffset = endZoneOffset,
+            startTime = timeRange.startTime,
+            endTime = timeRange.endTime,
+            startZoneOffset = timeRange.startZoneOffset,
+            endZoneOffset = timeRange.endZoneOffset,
             energy = energyField("energy"),
             protein = massField("protein"),
             totalCarbohydrate = massField("totalCarbohydrate"),

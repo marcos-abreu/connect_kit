@@ -8,9 +8,10 @@ import dev.luix.connect_kit.mapper.RecordMapperException
 import dev.luix.connect_kit.mapper.RecordTypeMapper
 import dev.luix.connect_kit.mapper.CategoryMapper
 import dev.luix.connect_kit.utils.RecordMapperUtils
+import dev.luix.connect_kit.utils.RecordTimeRange
+import dev.luix.connect_kit.utils.UnwrappedValue
 import dev.luix.connect_kit.utils.CKConstants
-import dev.luix.connect_kit.utils.RecordMapperUtils.FieldData
-import dev.luix.connect_kit.utils.RecordMapperUtils.RawSample
+import dev.luix.connect_kit.utils.RecordMapperUtils.DataSample
 
 import kotlin.reflect.KClass
 import java.time.Instant
@@ -22,20 +23,6 @@ import java.time.Instant
  * measurements like steps, weight, heart rate, etc.
  *
  * Used internally by [RecordMapper] to handle RECORD_KIND_DATA_RECORD
- *
- * **Supported Record Types**:
- * - StepsRecord
- * - WeightRecord
- * - HeartRateRecord
- * - DistanceRecord
- * - And many more quantity/instantaneous records
- *
- * **Architecture**:
- * This mapper follows the pattern used by all record mappers:
- * 1. Extract common fields (time, metadata)
- * 2. Extract type-specific fields (value, unit)
- * 3. Map to appropriate Health Connect Record class
- * 4. Handle platform-specific conversions and validations
  *
  * @property healthConnectClient The Health Connect client (for type validation)
  */
@@ -62,59 +49,36 @@ class DataRecordMapper(
      * @throws RecordMapperException If decoding fails
      */
     fun decode(map: Map<String, Any?>): Record {
-        // Extract required fields
         val type = RecordMapperUtils.getRequiredString(map, "type", RECORD_KIND)
         val dataMap = RecordMapperUtils.getRequiredMap(map, "data", RECORD_KIND)
 
-        val startTimeString = RecordMapperUtils.getRequiredString(map, "startTime", RECORD_KIND)
-        val endTimeString = RecordMapperUtils.getRequiredString(map, "endTime", RECORD_KIND)
+        CKLogger.w(tag = TAG, message = "Mapping data record type: '$type'")
 
-        // Parse timestamps
-        val startTime = RecordMapperUtils.parseInstant(startTimeString, "startTime", RECORD_KIND)
-        val endTime = RecordMapperUtils.parseInstant(endTimeString, "endTime", RECORD_KIND)
+        val recordClass = RecordTypeMapper.getRecordClass(type, healthConnectClient)
+            ?: throw RecordMapperException(
+                message = "Record type '$type' is not supported on HealthConnect. " +
+                        RecordTypeMapper.getUnsupportedReason(type, healthConnectClient),
+                recordKind = RECORD_KIND,
+                fieldName = "type"
+            )
 
-        // Validate time order
-        RecordMapperUtils.validateTimeOrder(startTime, endTime, RECORD_KIND)
+        val timeRange = RecordMapperUtils.extractTimeRange(map, RECORD_KIND)
 
-        // Parse zone offsets
-        val startZoneOffsetSeconds = RecordMapperUtils.getRequiredInt(
-            map, "startZoneOffsetSeconds", RECORD_KIND
+        val valueMap = RecordMapperUtils.unwrapData(
+            dataMap = dataMap,
+            recordMap = map,
+            type = type,
+            recordKind = RECORD_KIND,
         )
-        val endZoneOffsetSeconds = RecordMapperUtils.getRequiredInt(
-            map, "endZoneOffsetSeconds", RECORD_KIND
-        )
 
-        val startZoneOffset = RecordMapperUtils.parseZoneOffset(startZoneOffsetSeconds)
-        val endZoneOffset = RecordMapperUtils.parseZoneOffset(endZoneOffsetSeconds)
-
-        // Extract source and build metadata
         val sourceMap = RecordMapperUtils.getOptionalMap(map, "source")
         val metadata = RecordMapperUtils.buildMetadata(sourceMap)
 
-        // Extract value and unit
-        val value = RecordMapperUtils.getRequiredMap(map, "value", RECORD_KIND)
-        val valuePattern = RecordMapperUtils.getRequiredString(map, "valuePattern", RECORD_KIND)
-        val unit = RecordMapperUtils.getOptionalString(map, "unit")
-
-        // Validate that type is supported
-        val recordClass = RecordTypeMapper.getRecordClass(type, healthConnectClient)
-            ?: throw RecordMapperException(
-                message = "Record type '$type' is not supported on this device. " +
-                        RecordTypeMapper.getUnsupportedReason(type, healthConnectClient),
-                recordKind = RECORD_KIND
-            )
-
-        // Delegate to type-specific decoder
         return decodeByType(
             recordClass = recordClass,
             type = type,
-            valuePattern = valuePattern,
-            value = value,
-            unit = unit,
-            startTime = startTime,
-            endTime = endTime,
-            startZoneOffset = startZoneOffset,
-            endZoneOffset = endZoneOffset,
+            valueMap = valueMap,
+            timeRange = timeRange,
             metadata = metadata
         )
     }
@@ -128,13 +92,8 @@ class DataRecordMapper(
     private fun decodeByType(
         recordClass: KClass<out Record>,
         type: String,
-        valuePattern: String,
-        value: Any,
-        unit: String?,
-        startTime: java.time.Instant,
-        endTime: java.time.Instant,
-        startZoneOffset: java.time.ZoneOffset,
-        endZoneOffset: java.time.ZoneOffset,
+        valueMap: UnwrappedValue,
+        timeRange: RecordTimeRange,
         metadata: androidx.health.connect.client.records.metadata.Metadata
     ): Record {
 
@@ -143,265 +102,185 @@ class DataRecordMapper(
             // === Instantaneous Records (single time point) ===
 
             BasalMetabolicRateRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val power = RecordMapperUtils.convertToPower(numericValue, unit, RECORD_KIND)
+                val power = RecordMapperUtils.convertToPower(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 BasalMetabolicRateRecord(
                     basalMetabolicRate = power,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             HeightRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val length = RecordMapperUtils.convertToLength(numericValue, unit, RECORD_KIND)
+                val length = RecordMapperUtils.convertToLength(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 HeightRecord(
                     height = length,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             WeightRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val mass = RecordMapperUtils.convertToMass(numericValue, unit, RECORD_KIND)
+                val mass = RecordMapperUtils.convertToMass(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 WeightRecord(
                     weight = mass,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             BodyFatRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
                 BodyFatRecord(
-                    percentage = Percentage(numericValue), // Health Connect expects Percentage
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    percentage = Percentage(valueMap.value as Double), // Health Connect expects Percentage
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             LeanBodyMassRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val mass = RecordMapperUtils.convertToMass(numericValue, unit, RECORD_KIND)
+                val mass = RecordMapperUtils.convertToMass(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 LeanBodyMassRecord(
                     mass = mass,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             BoneMassRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val mass = RecordMapperUtils.convertToMass(numericValue, unit, RECORD_KIND)
+                val mass = RecordMapperUtils.convertToMass(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 BoneMassRecord(
                     mass = mass,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             BodyWaterMassRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val mass = RecordMapperUtils.convertToMass(numericValue, unit, RECORD_KIND)
+                val mass = RecordMapperUtils.convertToMass(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 BodyWaterMassRecord(
                     mass = mass,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             BasalBodyTemperatureRecord::class -> {
-                val valueMap = RecordMapperUtils.expectMultipleValue(
-                    value = value,
-                    valuePattern = valuePattern,
-                    type = type,
-                    possibleFields = mapOf(
-                        "temperature" to CKConstants.VALUE_PATTERN_QUANTITY,
-                        "measurementLocation" to CKConstants.VALUE_PATTERN_CATEGORY
-                    ),
-                    recordKind = RECORD_KIND
-                )
-
-                val temperatureData = valueMap["temperature"]
-                    ?: throw RecordMapperException("Missing 'temperature' field", RECORD_KIND, type)
-                val temperatureValue = RecordMapperUtils.expectNumericValue(
-                    temperatureData.value,
-                    temperatureData.valuePattern,
-                    recordKind = RECORD_KIND
-                )
                 val temperature = RecordMapperUtils.convertToTemperature(
-                    temperatureValue,
-                    temperatureData.unit,
+                    valueMap.value as Double,
+                    valueMap.unit,
                     RECORD_KIND
                 )
-
-                val measurementLocation = categoryMapper.decodeFromField(
-                    valueMap, "measurementLocation", "BodyTemperatureMeasurementLocation", RECORD_KIND, type
-                ) ?: BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_UNKNOWN
+                val measurementLocation = (valueMap.derivedMetadata["measurementLocation"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_UNKNOWN
 
                 BasalBodyTemperatureRecord(
                     temperature = temperature,
                     measurementLocation = measurementLocation,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             RestingHeartRateRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
                 RestingHeartRateRecord(
-                    beatsPerMinute = numericValue.toLong(), // Health Connect expects Long
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    beatsPerMinute = (valueMap.value as Double).toLong(), // Health Connect expects Long
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             BloodGlucoseRecord::class -> {
-                val valueMap = RecordMapperUtils.expectMultipleValue(
-                    value = value,
-                    valuePattern = valuePattern,
-                    type = type,
-                    possibleFields = mapOf(
-                        "level" to CKConstants.VALUE_PATTERN_QUANTITY,
-                        "specimenSource" to CKConstants.VALUE_PATTERN_CATEGORY,
-                        "mealType" to CKConstants.VALUE_PATTERN_CATEGORY,
-                        "relationToMeal" to CKConstants.VALUE_PATTERN_CATEGORY,
-                    ),
-                    recordKind = RECORD_KIND
-                )
-
-                val levelData = valueMap["level"]
-                    ?: throw RecordMapperException("Missing 'level' field", RECORD_KIND, type)
-                val levelValue = RecordMapperUtils.expectNumericValue(
-                    levelData.value,
-                    levelData.valuePattern,
-                    recordKind = RECORD_KIND
-                )
                 val level = RecordMapperUtils.convertToBloodGlucoseLevel(
-                    levelValue,
-                    levelData.unit,
+                    valueMap.value as Double,
+                    valueMap.unit,
                     RECORD_KIND
                 )
 
-                val specimenSource = categoryMapper.decodeFromField(
-                    valueMap, "specimenSource", "SpecimenSource", RECORD_KIND, type
-                ) ?: BloodGlucoseRecord.SPECIMEN_SOURCE_UNKNOWN
+                val specimenSource = (valueMap.derivedMetadata["specimenSource"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: BloodGlucoseRecord.SPECIMEN_SOURCE_UNKNOWN
 
-                val mealType = categoryMapper.decodeFromField(
-                    valueMap, "mealType", "MealType", RECORD_KIND, type
-                ) ?: MealType.MEAL_TYPE_UNKNOWN
+                val mealType = (valueMap.derivedMetadata["mealType"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: MealType.MEAL_TYPE_UNKNOWN
 
-                val relationToMeal = categoryMapper.decodeFromField(
-                    valueMap, "relationToMeal", "RelationToMeal", RECORD_KIND, type
-                ) ?: BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
+                val relationToMeal = (valueMap.derivedMetadata["relationToMeal"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
 
                 BloodGlucoseRecord(
                     level = level,
                     specimenSource = specimenSource,
                     mealType = mealType,
                     relationToMeal = relationToMeal,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             BodyTemperatureRecord::class -> {
-                val valueMap = RecordMapperUtils.expectMultipleValue(
-                    value = value,
-                    valuePattern = valuePattern,
-                    type = type,
-                    possibleFields = mapOf(
-                        "temperature" to CKConstants.VALUE_PATTERN_QUANTITY,
-                        "measurementLocation" to CKConstants.VALUE_PATTERN_CATEGORY,
-                    ),
-                    recordKind = RECORD_KIND
-                )
-
-                val temperatureData = valueMap["temperature"]
-                    ?: throw RecordMapperException("Missing 'temperature' field", RECORD_KIND, type)
-                val temperatureValue = RecordMapperUtils.expectNumericValue(
-                    temperatureData.value,
-                    temperatureData.valuePattern,
-                    recordKind = RECORD_KIND
-                )
                 val temperature = RecordMapperUtils.convertToTemperature(
-                    temperatureValue,
-                    temperatureData.unit,
+                    valueMap.value as Double,
+                    valueMap.unit,
                     RECORD_KIND
                 )
-                val measurementLocation = categoryMapper.decodeFromField(
-                    valueMap, "measurementLocation", "BodyTemperatureMeasurementLocation", RECORD_KIND, type
-                ) ?: BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_UNKNOWN
+                val measurementLocation = (valueMap.derivedMetadata["measurementLocation"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->   
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_UNKNOWN
 
                 BodyTemperatureRecord(
                     temperature = temperature,
                     measurementLocation = measurementLocation,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             OxygenSaturationRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
                 OxygenSaturationRecord(
-                    percentage = Percentage(numericValue),
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    percentage = Percentage(valueMap.value as Double),
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             RespiratoryRateRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
                 RespiratoryRateRecord(
-                    rate = numericValue, // Health Connect expects Double
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    rate = valueMap.value as Double, // Health Connect expects Double
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             Vo2MaxRecord::class -> {
-                val valueMap = RecordMapperUtils.expectMultipleValue(
-                    value = value,
-                    valuePattern = valuePattern,
-                    type = type,
-                    possibleFields = mapOf(
-                        "vo2Max" to CKConstants.VALUE_PATTERN_QUANTITY,
-                        "measurementMethod" to CKConstants.VALUE_PATTERN_CATEGORY,
-                    ),
-                    recordKind = RECORD_KIND
-                )
-
-                val vo2MaxData = valueMap["vo2Max"]
-                    ?: throw RecordMapperException("Missing 'vo2Max' field", RECORD_KIND, type)
-                val vo2MaxValue = RecordMapperUtils.expectNumericValue(
-                    vo2MaxData.value,
-                    vo2MaxData.valuePattern,
-                    recordKind = RECORD_KIND
-                )
-
-                val measurementMethod = categoryMapper.decodeFromField(
-                    valueMap, "measurementMethod", "Vo2MaxMeasurementMethod", RECORD_KIND, type
-                ) ?: Vo2MaxRecord.MEASUREMENT_METHOD_OTHER
+                val measurementMethod = (valueMap.derivedMetadata["measurementMethod"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: Vo2MaxRecord.MEASUREMENT_METHOD_OTHER
 
                 Vo2MaxRecord(
-                    vo2MillilitersPerMinuteKilogram = vo2MaxValue, // Health Connect expects Double
+                    vo2MillilitersPerMinuteKilogram = valueMap.value as Double, // Health Connect expects Double
                     measurementMethod = measurementMethod,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
@@ -409,102 +288,94 @@ class DataRecordMapper(
             // === Interval Records (time range) ===
 
             ActiveCaloriesBurnedRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val energy = RecordMapperUtils.convertToEnergy(numericValue, unit, RECORD_KIND)
+                val energy = RecordMapperUtils.convertToEnergy(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 ActiveCaloriesBurnedRecord(
                     energy = energy,
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             TotalCaloriesBurnedRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val energy = RecordMapperUtils.convertToEnergy(numericValue, unit, RECORD_KIND)
+                val energy = RecordMapperUtils.convertToEnergy(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 TotalCaloriesBurnedRecord(
                     energy = energy,
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             StepsRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
                 StepsRecord(
-                    count = numericValue.toLong(), // Health Connect expects Long
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    count = (valueMap.value as Double).toLong(), // Health Connect expects Long
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             DistanceRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val distance = RecordMapperUtils.convertToLength(numericValue, unit, RECORD_KIND)
+                val distance = RecordMapperUtils.convertToLength(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 DistanceRecord(
                     distance = distance,
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             FloorsClimbedRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
                 FloorsClimbedRecord(
-                    floors = numericValue, // Health Connect expects Double
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    floors = valueMap.value as Double, // Health Connect expects Double
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             ElevationGainedRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val elevation = RecordMapperUtils.convertToLength(numericValue, unit, RECORD_KIND)
+                val elevation = RecordMapperUtils.convertToLength(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 ElevationGainedRecord(
                     elevation = elevation, // Health Connect expects Double
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             HydrationRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
-                val volume = RecordMapperUtils.convertToVolume(numericValue, unit, RECORD_KIND)
+                val volume = RecordMapperUtils.convertToVolume(valueMap.value as Double, valueMap.unit, RECORD_KIND)
                 HydrationRecord(
                     volume = volume,
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             WheelchairPushesRecord::class -> {
-                val numericValue = RecordMapperUtils.expectNumericValue(value, valuePattern, type)
                 WheelchairPushesRecord(
-                    count = numericValue.toLong(), // Health Connect expects Long
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    count = (valueMap.value as Double).toLong(), // Health Connect expects Long
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
@@ -512,27 +383,25 @@ class DataRecordMapper(
             // === Records That Require SAMPLES (even if single value) ===
 
             SpeedRecord::class -> {
-                val rawSamples = RecordMapperUtils.expectSamplesValue(value, valuePattern, type)
-                val speedSamples = rawSamples.map { sample ->
+                val speedSamples = (valueMap.value as List<DataSample>).map { sample ->
                     SpeedRecord.Sample(
                         time = Instant.ofEpochMilli(sample.timeMillis),
-                        speed = RecordMapperUtils.convertToVelocity(sample.value, unit, RECORD_KIND)
+                        speed = RecordMapperUtils.convertToVelocity(sample.value, valueMap.unit, RECORD_KIND)
                     )
                 }
 
                 SpeedRecord(
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     samples = speedSamples,
                     metadata = metadata
                 )
             }
 
             HeartRateRecord::class -> {
-                val samples = RecordMapperUtils.expectSamplesValue(value, valuePattern, type)
-                val heartRateSamples = samples.map { sample ->
+                val heartRateSamples = (valueMap.value as List<DataSample>).map { sample ->
                     HeartRateRecord.Sample(
                         time = Instant.ofEpochMilli(sample.timeMillis),
                         beatsPerMinute = sample.value.toLong() // Health Connect expects Long
@@ -540,37 +409,35 @@ class DataRecordMapper(
                 }
 
                 HeartRateRecord(
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     samples = heartRateSamples,
                     metadata = metadata
                 )
             }
 
             PowerRecord::class -> {
-                val samples = RecordMapperUtils.expectSamplesValue(value, valuePattern, type)
-                val powerSamples = samples.map { sample ->
+                val powerSamples = (valueMap.value as List<DataSample>).map { sample ->
                     PowerRecord.Sample(
                         time = Instant.ofEpochMilli(sample.timeMillis),
-                        power = RecordMapperUtils.convertToPower(sample.value, unit, RECORD_KIND)
+                        power = RecordMapperUtils.convertToPower(sample.value, valueMap.unit, RECORD_KIND)
                     )
                 }
 
                 PowerRecord(
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     samples = powerSamples,
                     metadata = metadata
                 )
             }
 
             CyclingPedalingCadenceRecord::class -> {
-                val samples = RecordMapperUtils.expectSamplesValue(value, valuePattern, type)
-                val cyclingCadenceSamples = samples.map { sample ->
+                val cyclingCadenceSamples = (valueMap.value as List<DataSample>).map { sample ->
                     CyclingPedalingCadenceRecord.Sample(
                         time = Instant.ofEpochMilli(sample.timeMillis),
                         revolutionsPerMinute = sample.value // Health Connect expects Double
@@ -578,62 +445,39 @@ class DataRecordMapper(
                 }
 
                 CyclingPedalingCadenceRecord(
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     samples = cyclingCadenceSamples,
                     metadata = metadata
                 )
             }
 
             SkinTemperatureRecord::class -> {
-                val valueMap = RecordMapperUtils.expectMultipleValue(
-                    value = value,
-                    valuePattern = valuePattern,
-                    type = type,
-                    possibleFields = mapOf(
-                        "deltas" to CKConstants.VALUE_PATTERN_SAMPLES,
-                        "baseline" to CKConstants.VALUE_PATTERN_QUANTITY,
-                        "measurementLocation" to CKConstants.VALUE_PATTERN_CATEGORY,
-                    ),
-                    recordKind = RECORD_KIND
-                )
-
-                val measurementLocation = categoryMapper.decodeFromField(
-                    valueMap, "measurementLocation", "SkinTemperatureMeasurementLocation", RECORD_KIND, type
-                ) ?: SkinTemperatureRecord.MEASUREMENT_LOCATION_UNKNOWN
-
-                val baseline = valueMap["baseline"]?.let { data ->
-                    RecordMapperUtils.convertToTemperature(
-                        RecordMapperUtils.expectNumericValue(data.value, data.valuePattern, RECORD_KIND),
-                        RecordMapperUtils.requireUnit(data.unit, RECORD_KIND),
-                        RECORD_KIND
+                val deltaSamples = (valueMap.value as List<DataSample>).map { sample ->
+                    SkinTemperatureRecord.Delta(
+                        time = Instant.ofEpochMilli(sample.timeMillis),
+                        delta = RecordMapperUtils.convertToTemperatureDelta(sample.value, valueMap.unit, RECORD_KIND)
                     )
                 }
 
-                val deltaSamples = valueMap["deltas"]?.let { data ->
-                    val samples = RecordMapperUtils.expectSamplesValue(data.value, data.valuePattern, type)
-                    samples.map { sample ->
-                        SkinTemperatureRecord.Delta(
-                            time = Instant.ofEpochMilli(sample.timeMillis),
-                            delta = RecordMapperUtils.convertToTemperatureDelta(
-                                sample.value,
-                                data.unit,
-                                RECORD_KIND
-                            )
-                        )
-                    }
-                } ?: throw RecordMapperException("Missing 'deltas' field", RECORD_KIND, type)
+                val measurementLocation = (valueMap.derivedMetadata["measurementLocation"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: SkinTemperatureRecord.MEASUREMENT_LOCATION_UNKNOWN
+
+                val baseline = (valueMap.derivedMetadata["baseline"] as? UnwrappedValue)
+                    ?.let { RecordMapperUtils.convertToTemperature(it.value as Double, it.unit, RECORD_KIND) }
 
                 SkinTemperatureRecord(
                     deltas = deltaSamples,
                     baseline = baseline,
                     measurementLocation = measurementLocation,
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
@@ -641,156 +485,136 @@ class DataRecordMapper(
             // === Category Records (no value/unit, uses type constants) ===
 
             MindfulnessSessionRecord::class -> {
-                val valueMap = RecordMapperUtils.expectMultipleValue(
-                    value = value,
-                    valuePattern = valuePattern,
-                    type = type,
-                    possibleFields = mapOf(
-                        "mindfulnessSessionType" to CKConstants.VALUE_PATTERN_CATEGORY,
-                        "title" to CKConstants.VALUE_PATTERN_LABEL,
-                        "notes" to CKConstants.VALUE_PATTERN_LABEL,
-                    ),
-                    recordKind = RECORD_KIND
-                )
-
-                val mindfulnessSessionType = categoryMapper.decodeFromField(
-                    valueMap, "mindfulnessSessionType", "MindfulnessSessionType", RECORD_KIND, type
-                ) ?: throw RecordMapperException(
-                    "Invalid category value '${valueMap["mindfulnessSessionType"]?.value}' for 'MindfulnessSessionType'",
+                val sessionType = (valueMap.value as? Map<String, String>)?.let { map ->
+                    categoryMapper.decode(map["categoryName"], map["value"])
+                } ?: throw RecordMapperException(
+                    "Invalid category value '${(valueMap.value as? Map<String, String>)?.get("value")}' for '${(valueMap.value as? Map<String, String>)?.get("categoryName")}'",
                     RECORD_KIND,
-                    "MindfulnessSessionType"
+                    "sessionType"
                 )
 
                 MindfulnessSessionRecord(
-                    mindfulnessSessionType = mindfulnessSessionType,
-                    title = valueMap["title"]?.value as String,
-                    notes = valueMap["notes"]?.value as String,
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    mindfulnessSessionType = sessionType,
+                    title = valueMap.derivedMetadata["title"]?.let { it as UnwrappedValue }?.value as String,
+                    notes = valueMap.derivedMetadata["notes"]?.let { it as UnwrappedValue }?.value as String,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             MenstruationFlowRecord::class -> {
-                val categoryValue = RecordMapperUtils.expectCategoryValue(value, valuePattern, type)
-                val flow = categoryMapper.decode("MenstruationFlow", categoryValue)
-                    ?: throw RecordMapperException(
-                        "Invalid category value '$categoryValue' for 'MenstruationFlow'",
-                        RECORD_KIND,
-                        "MenstruationFlow"
-                    )
+                val flow = (valueMap.value as? Map<String, String>)?.let { map ->
+                    categoryMapper.decode(map["categoryName"], map["value"])
+                } ?: throw RecordMapperException(
+                    "Invalid category value '${(valueMap.value as? Map<String, String>)?.get("value")}' for '${(valueMap.value as? Map<String, String>)?.get("categoryName")}'",
+                    RECORD_KIND,
+                    "MenstruationFlow"
+                )
+
                 MenstruationFlowRecord(
                     flow = flow,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             CervicalMucusRecord::class -> {
-                val valueMap = RecordMapperUtils.expectMultipleValue(
-                    value = value,
-                    valuePattern = valuePattern,
-                    type = type,
-                    possibleFields = mapOf(
-                        "appearance" to CKConstants.VALUE_PATTERN_CATEGORY,
-                        "sensation" to CKConstants.VALUE_PATTERN_CATEGORY,
-                    ),
-                    recordKind = RECORD_KIND
-                )
-                val appearance = categoryMapper.decodeFromField(
-                    valueMap, "appearance", "CervicalMucusAppearance", RECORD_KIND, type
-                ) ?: CervicalMucusRecord.APPEARANCE_UNKNOWN
+                val appearance = (valueMap.value as? Map<String, String>)?.let { map ->
+                    categoryMapper.decode(map["categoryName"], map["value"])
+                } ?: CervicalMucusRecord.APPEARANCE_UNKNOWN
 
-                val sensation = categoryMapper.decodeFromField(
-                    valueMap, "sensation", "CervicalMucusSensation", RECORD_KIND, type
-                ) ?: CervicalMucusRecord.SENSATION_UNKNOWN
+                val sensation = (valueMap.derivedMetadata["sensation"] as? UnwrappedValue)
+                    ?.value?.let { it as? Map<String, String> }?.let { map ->
+                        categoryMapper.decode(map["categoryName"], map["value"])
+                    } ?: CervicalMucusRecord.SENSATION_UNKNOWN
 
                 CervicalMucusRecord(
                     appearance = appearance,
                     sensation = sensation,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             OvulationTestRecord::class -> {
-                val categoryValue = RecordMapperUtils.expectCategoryValue(value, valuePattern, type)
-                val result = categoryMapper.decode("OvulationTestResult", categoryValue)
-                    ?: throw RecordMapperException(
-                        "Invalid category value '$categoryValue' for 'OvulationTestResult'",
-                        RECORD_KIND,
-                        "OvulationTestResult"
-                    )
+                val result = (valueMap.value as? Map<String, String>)?.let { map ->
+                    categoryMapper.decode(map["categoryName"], map["value"])
+                } ?: throw RecordMapperException(
+                    "Invalid category value '${(valueMap.value as? Map<String, String>)?.get("value")}' for '${(valueMap.value as? Map<String, String>)?.get("categoryName")}'",
+                    RECORD_KIND,
+                    "OvulationTestResult"
+                )
+
                 OvulationTestRecord(
                     result = result,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             SexualActivityRecord::class -> {
-                val categoryValue = RecordMapperUtils.expectCategoryValue(value, valuePattern, type)
-                val protectionUsed = categoryMapper.decode("SexualActivityProtection", categoryValue)
-                    ?: throw RecordMapperException(
-                        "Invalid category value '$categoryValue' for 'SexualActivityProtection'",
-                        RECORD_KIND,
-                        "SexualActivityProtection"
-                    )
+                val protectionUsed = (valueMap.value as? Map<String, String>)?.let { map ->
+                    categoryMapper.decode(map["categoryName"], map["value"])
+                } ?: throw RecordMapperException(
+                    "Invalid category value '${(valueMap.value as? Map<String, String>)?.get("value")}' for '${(valueMap.value as? Map<String, String>)?.get("categoryName")}'",
+                    RECORD_KIND,
+                    "SexualActivityProtection"
+                )
+
                 SexualActivityRecord(
                     protectionUsed = protectionUsed,
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
             ActivityIntensityRecord::class -> {
-                val categoryValue = RecordMapperUtils.expectCategoryValue(value, valuePattern, type)
-                val activityIntensityType = categoryMapper.decode("ActivityIntensityType", categoryValue)
-                    ?: throw RecordMapperException(
-                        "Invalid category value '$categoryValue' for 'ActivityIntensityType'",
-                        RECORD_KIND,
-                        "ActivityIntensityType"
-                    )
+                val activityIntensityType = (valueMap.value as? Map<String, String>)?.let { map ->
+                    categoryMapper.decode(map["categoryName"], map["value"])
+                } ?: throw RecordMapperException(
+                    "Invalid category value '${(valueMap.value as? Map<String, String>)?.get("value")}' for '${(valueMap.value as? Map<String, String>)?.get("categoryName")}'",
+                    RECORD_KIND,
+                    "ActivityIntensityType"
+                )
+
                 ActivityIntensityRecord(
                     activityIntensityType = activityIntensityType,
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             // === Session/Flag Records (no value needed) ===
 
-            IntermenstrualBleedingRecord::class -> {
-                // Value/unit ignored
+            IntermenstrualBleedingRecord::class -> { // Value/unit ignored
                 IntermenstrualBleedingRecord(
-                    time = startTime,
-                    zoneOffset = startZoneOffset,
+                    time = timeRange.startTime,
+                    zoneOffset = timeRange.startZoneOffset,
                     metadata = metadata
                 )
             }
 
-            MenstruationPeriodRecord::class -> {
-                // Value/unit ignored
+            MenstruationPeriodRecord::class -> { // Value/unit ignored
                 MenstruationPeriodRecord(
-                    startTime = startTime,
-                    endTime = endTime,
-                    startZoneOffset = startZoneOffset,
-                    endZoneOffset = endZoneOffset,
+                    startTime = timeRange.startTime,
+                    endTime = timeRange.endTime,
+                    startZoneOffset = timeRange.startZoneOffset,
+                    endZoneOffset = timeRange.endZoneOffset,
                     metadata = metadata
                 )
             }
 
             else -> {
-                // Unsupported record class
                 throw RecordMapperException(
                     message = "Record class ${recordClass.simpleName} is recognized but not yet " +
                             "implemented in DataRecordMapper. Please add implementation.",

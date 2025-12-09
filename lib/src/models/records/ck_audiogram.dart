@@ -12,12 +12,20 @@ class CKAudiogram extends CKRecord {
   /// List of hearing sensitivity measurements at different frequencies
   final List<CKAudiogramPoint> sensitivityPoints;
 
-  /// TODO: add documentation
-  const CKAudiogram({
+  /// Create audiogram record
+  /// parameters:
+  /// - id: Optional record ID
+  /// - time: Required time of the record
+  /// - zoneOffset: Optional time zone offset
+  /// - source: Optional source of the record
+  /// - metadata: Optional metadata
+  /// - sensitivityPoints: Required list of sensitivity points
+  CKAudiogram({
     super.id,
     required DateTime time,
     Duration? zoneOffset,
     super.source,
+    super.metadata,
     required this.sensitivityPoints,
   }) : super(
           startTime: time,

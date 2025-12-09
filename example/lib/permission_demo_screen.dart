@@ -82,9 +82,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
           color: Colors.white,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: ElevatedButton(
-            onPressed: _canExecuteAction() && !_isLoading
-                ? _executeAction
-                : null,
+            onPressed:
+                _canExecuteAction() && !_isLoading ? _executeAction : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue[600],
               foregroundColor: Colors.white,
@@ -457,7 +456,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
           }
 
           // Check background access
-          if (_requestBackground && _lastAccessStatus!.backgroundAccess.isDenied) {
+          if (_requestBackground &&
+              _lastAccessStatus!.backgroundAccess.isDenied) {
             allGranted = false;
             anyDenied = true;
           }
@@ -468,7 +468,9 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
               if (accessEntry.value.isDenied) {
                 allGranted = false;
                 anyDenied = true;
-              } else if (accessEntry.value.isNotDetermined || accessEntry.value.isUnknown || accessEntry.value.isNotSupported) {
+              } else if (accessEntry.value.isNotDetermined ||
+                  accessEntry.value.isUnknown ||
+                  accessEntry.value.isNotSupported) {
                 allGranted = false;
               }
             }
@@ -523,11 +525,12 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
 
   void _showResultModal(String message, bool isError) {
     // Parse the result message to determine success type
-    final isAllGranted = message.contains('successful') || message.contains('All permissions granted');
-    final isPartialGranted = message.contains('failed') || message.contains('Some permissions');
-    final resultType = isError
-        ? 'error'
-        : (isAllGranted ? 'success' : 'partial');
+    final isAllGranted = message.contains('successful') ||
+        message.contains('All permissions granted');
+    final isPartialGranted =
+        message.contains('failed') || message.contains('Some permissions');
+    final resultType =
+        isError ? 'error' : (isAllGranted ? 'success' : 'partial');
 
     showModalBottomSheet(
       context: context,
@@ -572,7 +575,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: _getResultBorderColor(resultType)),
               ),
-              child: _selectedAction == _PermissionAction.check && _lastAccessStatus != null
+              child: _selectedAction == _PermissionAction.check &&
+                      _lastAccessStatus != null
                   ? _buildCheckPermissionsResult(resultType)
                   : _buildDefaultResultHeader(resultType),
             ),
@@ -1039,7 +1043,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   TextSpan(
-                    text: 'History permission requires an accompanying data-type read permission to trigger the dialog.',
+                    text:
+                        'History permission requires an accompanying data-type read permission to trigger the dialog.',
                   ),
                 ],
               ),
@@ -1058,7 +1063,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   TextSpan(
-                    text: 'Background permission triggers with any accompanying data-type read or write permission.',
+                    text:
+                        'Background permission triggers with any accompanying data-type read or write permission.',
                   ),
                 ],
               ),
@@ -1084,7 +1090,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     children: [TextSpan(text: 'Android → ')],
                   ),
                   TextSpan(
-                    text: 'Returns reliable permission status for all access types (read, write, history, background).',
+                    text:
+                        'Returns reliable permission status for all access types (read, write, history, background).',
                   ),
                 ],
               ),
@@ -1104,7 +1111,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     children: [TextSpan(text: 'iOS → ')],
                   ),
                   TextSpan(
-                    text: 'Read access always returns "unknown" - you must query data to infer actual status. Write access status is reliable.',
+                    text:
+                        'Read access always returns "unknown" - you must query data to infer actual status. Write access status is reliable.',
                   ),
                 ],
               ),
@@ -1130,7 +1138,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     children: [TextSpan(text: 'Android → ')],
                   ),
                   TextSpan(
-                    text: 'Fully supported. Revokes the requested permissions immediately.',
+                    text:
+                        'Fully supported. Revokes the requested permissions immediately.',
                   ),
                 ],
               ),
@@ -1150,7 +1159,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     children: [TextSpan(text: 'iOS → ')],
                   ),
                   TextSpan(
-                    text: 'Not supported. HealthKit does not allow apps to programmatically revoke their own permissions. User must manually revoke via iOS Settings.',
+                    text:
+                        'Not supported. HealthKit does not allow apps to programmatically revoke their own permissions. User must manually revoke via iOS Settings.',
                   ),
                 ],
               ),
@@ -1176,7 +1186,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     children: [TextSpan(text: 'Android → ')],
                   ),
                   TextSpan(
-                    text: 'Opens Health Connect settings for your app. On Android 14+, opens directly to app\'s permission screen.',
+                    text:
+                        'Opens Health Connect settings for your app. On Android 14+, opens directly to app\'s permission screen.',
                   ),
                 ],
               ),
@@ -1196,7 +1207,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                     children: [TextSpan(text: 'iOS → ')],
                   ),
                   TextSpan(
-                    text: 'Opens your app\'s system settings page. User must navigate to Health → Data Access & Devices → [Your App].',
+                    text:
+                        'Opens your app\'s system settings page. User must navigate to Health → Data Access & Devices → [Your App].',
                   ),
                 ],
               ),
@@ -1245,8 +1257,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                 color: keyword == 'final' || keyword == 'await'
                     ? const Color(0xFF569CD6) // Blue for keywords
                     : keyword.contains('for')
-                    ? const Color(0xFF9CDCFE) // Light blue for parameters
-                    : const Color(0xFF569CD6), // Blue for booleans
+                        ? const Color(0xFF9CDCFE) // Light blue for parameters
+                        : const Color(0xFF569CD6), // Blue for booleans
               ),
             ),
           );
@@ -1340,7 +1352,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
         buffer.writeln(');');
         break;
       case _PermissionAction.check:
-        buffer.writeln('final accessStatus = await connectKit.checkPermissions(');
+        buffer
+            .writeln('final accessStatus = await connectKit.checkPermissions(');
         _addCheckParameters(buffer);
         buffer.writeln(');');
         break;
@@ -1348,7 +1361,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
         buffer.writeln('final success = await connectKit.revokePermissions();');
         break;
       case _PermissionAction.settings:
-        buffer.writeln('final success = await connectKit.openHealthSettings();');
+        buffer
+            .writeln('final success = await connectKit.openHealthSettings();');
         break;
     }
 
@@ -1402,7 +1416,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
         for (int i = 0; i < accessTypes.length; i++) {
           final accessType = accessTypes.elementAt(i);
           final isLast = i == accessTypes.length - 1;
-          buffer.writeln('      CKAccessType.${accessType.toString()}${isLast ? '' : ','}');
+          buffer.writeln(
+              '      CKAccessType.${accessType.toString()}${isLast ? '' : ','}');
         }
         buffer.writeln('    },');
       });
@@ -1559,7 +1574,8 @@ class _PermissionDemoScreenState extends State<PermissionDemoScreen> {
                           children: [
                             TextSpan(
                               text: '${accessEntry.key.name}: ',
-                              style: const TextStyle(fontWeight: FontWeight.w500),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500),
                             ),
                             TextSpan(
                               text: status.name,

@@ -13,10 +13,8 @@ import androidx.health.connect.client.records.SexualActivityRecord
 import androidx.health.connect.client.records.ActivityIntensityRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 
-import dev.luix.connect_kit.utils.RecordMapperUtils.FieldData
-
 /**
- * Maps category names and values between Dart strings and Android Health Connect constants.
+ * Maps category values between Dart enum strings and Android Health Connect constants.
  *
  * This mapper provides bidirectional conversions:
  *  - [decode] converts a Dart enum string (e.g. "wrist") into the Android Int constant.
@@ -39,8 +37,6 @@ object CategoryMapper {
         "rectum" to BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_RECTUM,
         "artery" to BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_TEMPORAL_ARTERY,
         "toe" to BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_TOE,
-        "vagina" to BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_VAGINA,
-        "wrist" to BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_WRIST,
         "unknown" to BodyTemperatureMeasurementLocation.MEASUREMENT_LOCATION_UNKNOWN,
     )
 
@@ -108,7 +104,6 @@ object CategoryMapper {
         "creamy" to CervicalMucusRecord.APPEARANCE_CREAMY,
         "watery" to CervicalMucusRecord.APPEARANCE_WATERY,
         "eggWhite" to CervicalMucusRecord.APPEARANCE_EGG_WHITE,
-        "unusual" to CervicalMucusRecord.APPEARANCE_UNUSUAL,
         "unknown" to CervicalMucusRecord.APPEARANCE_UNKNOWN,
     )
 
@@ -148,26 +143,27 @@ object CategoryMapper {
         "unknown" to SleepSessionRecord.STAGE_TYPE_UNKNOWN,
     )
 
-    // Add more categories below:
-    // private val sleepStageType = mapOf("awake" to SleepStageRecord.STAGE_AWAKE, ...)
-
-    // Registry of all category maps
+    /**
+     * Registry using Dart enum class names as keys (from runtimeType.toString()).
+     *
+     * Keys must match the Dart enum class names exactly (e.g., "CKMealType", "CKSpecimenSource").
+     */
     private val registry: Map<String, Map<String, Int>> = mapOf(
-        "BodyTemperatureMeasurementLocation" to bodyTemperatureMeasurementLocation,
-        "SpecimenSource" to specimenSource,
-        "MealType" to mealType,
-        "RelationToMeal" to relationToMeal,
-        "Vo2MaxMeasurementMethod" to vo2MaxMeasurementMethod,
-        "SkinTemperatureMeasurementLocation" to skinTemperatureMeasurementLocation,
-        "MindfulnessSessionType" to mindfulnessSessionType,
-        "MenstruationFlow" to menstruationFlow,
-        "CervicalMucusAppearance" to cervicalMucusAppearance,
-        "CervicalMucusSensation" to cervicalMucusSensation,
-        "OvulationTestResult" to ovulationTestResult,
-        "SexualActivityProtection" to sexualActivityProtection,
-        "ActivityIntensityType" to activityIntensityType,
-        "SleepSession" to sleepSession,
-        // "SleepStageType" to sleepStageType,
+        "CKBodyTemperatureMeasurementLocation" to bodyTemperatureMeasurementLocation,
+        "CKSpecimenSource" to specimenSource,
+        "CKMealType" to mealType,
+        "CKRelationToMeal" to relationToMeal,
+        "CKVo2MaxMeasurementMethod" to vo2MaxMeasurementMethod,
+        "CKSkinTemperatureMeasurementLocation" to skinTemperatureMeasurementLocation,
+        "CKMindfulnessSessionType" to mindfulnessSessionType,
+        "CKMenstruationFlow" to menstruationFlow,
+        "CKCervicalMucusAppearance" to cervicalMucusAppearance,
+        "CKCervicalMucusSensation" to cervicalMucusSensation,
+        "CKOvulationTestResult" to ovulationTestResult,
+        "CKSexualActivityProtection" to sexualActivityProtection,
+        "CKActivityIntensityType" to activityIntensityType,
+        // NOTE: SleepSession is not a category enum in dart (no `CK` prefix)
+        "SleepSession" to sleepSession, // Note: This might need to be CKSleepStage depending on Dart implementation
     )
 
     // ------------------------------------------------------------------------
@@ -180,60 +176,25 @@ object CategoryMapper {
      * @param category The category name (e.g. "SkinTemperatureMeasurementLocation").
      * @param value The Dart enum value string (e.g. "wrist").
      * @return The matching Android Int constant, or `null` if unknown.
+     * @param categoryName The Dart enum class name (e.g. "CKMealType") - injected from Dart via runtimeType.toString()
+     * @param value The Dart enum value string (e.g. "breakfast")
+     * @return The matching Android Int constant, or `null` if unknown
      */
-    fun decode(category: String, value: String): Int? {
-        val categoryMap = registry[category] ?: return null
+    fun decode(categoryName: String?, value: String?): Int? {
+        if (categoryName == null || value == null) return null
+        val categoryMap = registry[categoryName] ?: return null
         return categoryMap[value]
     }
 
     /**
      * Encodes an Android Int constant into its corresponding Dart enum string.
      *
-     * @param category The category name (e.g. "SkinTemperatureMeasurementLocation").
-     * @param constant The Android constant value (e.g. MEASUREMENT_LOCATION_WRIST).
-     * @return The Dart enum string, or `null` if unknown.
+     * @param categoryName The Dart enum class name (e.g. "CKMealType")
+     * @param constant The Android constant value (e.g. MEAL_TYPE_BREAKFAST)
+     * @return The Dart enum value string (e.g. "breakfast"), or `null` if unknown
      */
-    fun encode(category: String, constant: Int): String? {
-        val categoryMap = registry[category] ?: return null
-        // Reverse lookup — find key by value
+    fun encode(categoryName: String, constant: Int): String? {
+        val categoryMap = registry[categoryName] ?: return null
         return categoryMap.entries.firstOrNull { it.value == constant }?.key
-    }
-
-
-    /**
-     * Decodes an optional category field from a map.
-     *
-     * This method is used to decode fields that are expected to be a category
-     * (e.g., "specimenSource" in Blood Glucose records).
-     *
-     * @param valueMap The map containing the field
-     * @param fieldName The name of the field
-     * @param categoryMapperKey The key to use in the category mapper
-     * @param type Record type, for logging/exception context
-     * @return The decoded category value OR null
-     * @throws RecordMapperException if the field is missing or invalid
-     */
-    fun decodeFromField(
-        valueMap: Map<String, FieldData>,
-        fieldName: String,
-        categoryMapperKey: String, // e.g., "BodyTemperatureMeasurementLocation"
-        recordKind: String,
-        type: String
-    ): Int? {
-        return valueMap[fieldName]?.let { fieldData ->
-            val rawValue = fieldData.value as? String
-                ?: throw RecordMapperException(
-                    "Expected String for '$fieldName' value, got ${fieldData.value::class.simpleName}",
-                    recordKind,
-                    type
-                )
-            decode(categoryMapperKey, rawValue)
-                ?: throw RecordMapperException(
-                    "Invalid '$fieldName' value: '$rawValue'",
-                    recordKind,
-                    type
-                )
-            // Return the successfully decoded Int constant
-        }
     }
 }

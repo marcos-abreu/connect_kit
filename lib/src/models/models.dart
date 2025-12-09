@@ -1,9 +1,11 @@
 // Health Record Schema (useful reading writeing health records)
+export 'package:connect_kit/src/models/schema/ck_unit.dart';
 export 'package:connect_kit/src/models/schema/ck_type.dart';
 export 'package:connect_kit/src/models/schema/ck_source.dart';
 export 'package:connect_kit/src/models/schema/ck_device.dart';
 
 // Health Records (Quantity and Category) types
+export 'package:connect_kit/src/models/records/ck_record.dart';
 export 'package:connect_kit/src/models/records/ck_data_record.dart';
 export 'package:connect_kit/src/models/records/ck_record_builder.g.dart';
 
