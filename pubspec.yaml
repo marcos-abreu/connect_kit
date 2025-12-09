@@ -3,7 +3,7 @@ description: "Cross-platform health data plugin bridging Apple HealthKit and And
 version: 0.3.2
 repository: https://github.com/marcos-abreu/connect_kit
 issue_tracker: https://github.com/marcos-abreu/connect_kit/issues
-homepage:
+homepage: https://github.com/marcos-abreu/connect_kit
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
